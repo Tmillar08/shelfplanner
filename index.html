@@ -88,6 +88,42 @@
     flex-direction: column;
     flex-shrink: 0;
     overflow-y: auto;
+    transition: width 0.2s ease, min-width 0.2s ease;
+  }
+  .left-panel.collapsed {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border-right: none;
+  }
+
+  /* ── PANEL TOGGLE TABS ── */
+  .panel-tab {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 52px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+    font-size: 10px;
+    color: var(--text2);
+    transition: background 0.15s, color 0.15s;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .panel-tab:hover { background: var(--accent); color: #000; }
+  .panel-tab-left  { right: -20px; border-left: none; border-radius: 0 4px 4px 0; }
+  .panel-tab-right { left: -20px;  border-right: none; border-radius: 4px 0 0 4px; }
+  .left-panel-wrap, .right-panel-wrap {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
   }
 
   .panel-section {
@@ -128,6 +164,7 @@
     cursor: grab;
     transition: border-color 0.15s, transform 0.1s;
     user-select: none;
+    touch-action: none;
   }
   .bin-item:hover {
     border-color: var(--accent);
@@ -319,10 +356,11 @@
     position: absolute;
     z-index: 5;
     transition: background 0.15s;
+    touch-action: none;
   }
   .shelf-drop-zone.drag-over {
-    background: rgba(240, 165, 0, 0.1);
-    outline: 1px dashed var(--accent);
+    background: rgba(240, 165, 0, 0.12);
+    outline: 2px dashed var(--accent);
     outline-offset: -2px;
     border-radius: 3px;
   }
@@ -332,6 +370,7 @@
     position: relative;
     flex-shrink: 0;
     cursor: pointer;
+    touch-action: none;
     border-radius: 3px 3px 0 0;
     display: flex;
     align-items: center;
@@ -477,6 +516,13 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    transition: width 0.2s ease, min-width 0.2s ease;
+  }
+  .right-panel.collapsed {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border-left: none;
   }
 
   .legend-item {
@@ -639,11 +685,12 @@
 <div id="help-overlay" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:9999;"></div>
 <div class="app">
 
-  <!-- LEFT PANEL -->
-  <div class="left-panel" id="hp-left-panel">
+  <!-- LEFT PANEL WRAPPER -->
+  <div class="left-panel-wrap">
+    <div class="left-panel" id="hp-left-panel">
 
-    <!-- Shelf Settings -->
-    <div class="panel-section" id="hp-unit-size">
+      <!-- Shelf Settings -->
+      <div class="panel-section" id="hp-unit-size">
       <h3>Shelf Unit Size</h3>
       <div class="ctrl-row">
         <label>Width (in) — clear span</label>
@@ -687,7 +734,9 @@
       </div>
     </div>
 
-  </div>
+    </div><!-- end left-panel -->
+    <div class="panel-tab panel-tab-left" id="left-tab" onclick="togglePanel('left')" title="Toggle panel">‹</div>
+  </div><!-- end left-panel-wrap -->
 
   <!-- CANVAS -->
   <div class="canvas-area" id="canvas" ondragover="onCanvasDragOver(event)" ondrop="onCanvasDrop(event)"
@@ -695,8 +744,10 @@
     <!-- shelf rows injected here -->
   </div>
 
-  <!-- RIGHT PANEL -->
-  <div class="right-panel" id="hp-right-panel">
+  <!-- RIGHT PANEL WRAPPER -->
+  <div class="right-panel-wrap">
+    <div class="panel-tab panel-tab-right" id="right-tab" onclick="togglePanel('right')" title="Toggle panel">›</div>
+    <div class="right-panel" id="hp-right-panel">
     <div class="panel-section" id="hp-statistics">
       <h3>Statistics</h3>
       <div class="stat-grid">
@@ -732,7 +783,8 @@
       <div class="empty-msg" id="shopping-preview" style="text-align:left;padding:6px 0;">No bins placed yet</div>
       <button class="btn btn-success btn-sm btn-full" style="margin-top:8px;" onclick="openShoppingList()">📋 View Full List</button>
     </div>
-  </div>
+  </div><!-- end right-panel -->
+  </div><!-- end right-panel-wrap -->
 
 </div>
 
@@ -1017,6 +1069,7 @@ function renderBinPalette() {
           e.dataTransfer.setDragImage(ghost, bin.w*PX()/2, bin.h*PX()/2);
           setTimeout(() => ghost.remove(), 0);
         });
+        attachPaletteTouchDrag(el, bin);
         el.addEventListener('mouseenter', e => showTooltip(e, bin));
         el.addEventListener('mouseleave', hideTooltip);
       }
@@ -1338,6 +1391,11 @@ function renderUnit(row, rowI, unit, unitI) {
         e.stopPropagation();
         startShelfDrag(e, row.id, unit.id, dataI);
       });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startShelfDrag(e, row.id, unit.id, dataI);
+      }, { passive: false });
       plank.appendChild(handle);
     }
 
@@ -1440,14 +1498,14 @@ function renderUnit(row, rowI, unit, unitI) {
       // Drag to reposition
       binEl.draggable = true;
       binEl.addEventListener('dragstart', ev => {
-        // Record offset within the bin where user grabbed
         const rect = binEl.getBoundingClientRect();
         const grabOffsetPx = ev.clientX - rect.left;
         draggingPlaced = { rowId: row.id, unitId: unit.id, shelfI: dataI, binI, bin, grabOffsetPx };
         draggingBinDef = null;
         ev.dataTransfer.effectAllowed = 'move';
-        ev.dataTransfer.setData('text/plain', ''); // required for Firefox
+        ev.dataTransfer.setData('text/plain', '');
       });
+      attachPlacedBinTouchDrag(binEl, bin, row.id, unit.id, dataI, binI);
       binEl.addEventListener('click', () => selectBin(row.id, unit.id, dataI, binI, bin));
       binEl.addEventListener('mouseenter', e => showTooltip(e, bin));
       binEl.addEventListener('mouseleave', hideTooltip);
@@ -1813,70 +1871,58 @@ function startShelfDrag(e, rowId, unitId, shelfI) {
   if (!unit) return;
 
   const px   = PX();
-  const maxH = unitH();
+  // Support both mouse and touch events
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-  // The plank being dragged separates shelf[shelfI-1] (below) and shelf[shelfI] (above)
-  // Collect the full stack heights for clamping
   _sd = {
     rowId, unitId, shelfI,
-    startY:     e.clientY,
-    startBelow: unit.shelves[shelfI - 1].height, // bay below the dragged plank
-    startAbove: unit.shelves[shelfI].height,      // bay above the dragged plank
+    startY:     clientY,
+    startBelow: unit.shelves[shelfI - 1].height,
+    startAbove: unit.shelves[shelfI].height,
     px,
     unit,
   };
 
-  document.addEventListener('mousemove', onShelfDragMove);
-  document.addEventListener('mouseup',   onShelfDragUp);
+  document.addEventListener('mousemove',  onShelfDragMove);
+  document.addEventListener('mouseup',    onShelfDragUp);
+  document.addEventListener('touchmove',  onShelfDragMove, { passive: false });
+  document.addEventListener('touchend',   onShelfDragUp);
+  document.addEventListener('touchcancel',onShelfDragUp);
   document.body.style.cursor = 'ns-resize';
   document.body.style.userSelect = 'none';
 }
 
 function onShelfDragMove(e) {
   if (!_sd) return;
+  if (e.touches) e.preventDefault(); // prevent page scroll while dragging shelf
   const { unit, shelfI, startY, startBelow, startAbove, px } = _sd;
 
-  // Delta in inches (positive = dragged down = below bay grows, above bay shrinks)
-  const dyPx = e.clientY - startY;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const dyPx = clientY - startY;
   const dyIn = dyPx / px;
 
   // Round to nearest 0.5"
   const snap = Math.round(dyIn * 2) / 2;
 
   // Find the shelf below that will absorb the change.
-  // shelf[belowIdx].height is the bay we'd shrink when dragging down.
-  // A locked shelf[belowIdx+1] means "protect the bay beneath me" — skip it.
   let belowIdx = shelfI - 1;
   while (belowIdx > 0 && unit.shelves[belowIdx + 1]?.locked) belowIdx--;
 
   // Find the shelf above that will absorb the change.
-  // shelf[aboveIdx].height is the bay we'd shrink when dragging up.
-  // A locked shelf[aboveIdx+1] means "protect the bay beneath me" — skip it.
   const topIdx = unit.shelves.length - 1;
   let aboveIdx = shelfI;
   while (aboveIdx < topIdx && unit.shelves[aboveIdx + 1]?.locked) aboveIdx++;
 
-  // Original heights for the two affected shelves
   const origBelow = unit.shelves[belowIdx].height;
   const origAbove = unit.shelves[aboveIdx].height;
+  const MIN = 4;
 
-  const MIN = 4; // minimum bay height in inches
+  const clampedSnap = Math.max(snap, -(origAbove - MIN));
+  const finalSnap   = Math.min(clampedSnap, origBelow - MIN);
 
-  // Clamp snap so neither bay goes below minimum
-  const clampedSnap = Math.max(
-    snap,
-    -(origAbove - MIN)   // can't shrink above bay below MIN
-  );
-  const finalSnap = Math.min(
-    clampedSnap,
-    origBelow - MIN      // can't shrink below bay below MIN
-  );
-
-  // Apply
   unit.shelves[belowIdx].height = parseFloat((origBelow - finalSnap).toFixed(2));
   unit.shelves[aboveIdx].height = parseFloat((origAbove + finalSnap).toFixed(2));
 
-  // Only auto-sync top shelf if it wasn't the one being dragged
   if (aboveIdx !== topIdx) {
     const lowerSum = unit.shelves.slice(0, topIdx).reduce((s, sh) => s + sh.height, 0);
     unit.shelves[topIdx].height = Math.max(MIN, parseFloat((unitH() - lowerSum).toFixed(2)));
@@ -1884,16 +1930,19 @@ function onShelfDragMove(e) {
 
   renderCanvas();
 
-  // Re-stash starting heights against current so next move delta is incremental
-  _sd.startY     = e.clientY;
+  // Re-stash for incremental next move
+  _sd.startY     = clientY;
   _sd.startBelow = unit.shelves[belowIdx].height;
   _sd.startAbove = unit.shelves[aboveIdx].height;
 }
 
 function onShelfDragUp() {
   _sd = null;
-  document.removeEventListener('mousemove', onShelfDragMove);
-  document.removeEventListener('mouseup',   onShelfDragUp);
+  document.removeEventListener('mousemove',   onShelfDragMove);
+  document.removeEventListener('mouseup',     onShelfDragUp);
+  document.removeEventListener('touchmove',   onShelfDragMove);
+  document.removeEventListener('touchend',    onShelfDragUp);
+  document.removeEventListener('touchcancel', onShelfDragUp);
   document.body.style.cursor = '';
   document.body.style.userSelect = '';
   renderCanvas();
@@ -2695,11 +2744,124 @@ function renderHelpOverlay() {
 // Re-render overlay on resize so positions stay accurate
 window.addEventListener('resize', () => { if (helpActive) renderHelpOverlay(); });
 
+// ─── PANEL COLLAPSE ──────────────────────────────────────────────────────────
+const _panelState = { left: true, right: true };
+
+function togglePanel(side) {
+  _panelState[side] = !_panelState[side];
+  const open = _panelState[side];
+  if (side === 'left') {
+    document.getElementById('hp-left-panel').classList.toggle('collapsed', !open);
+    document.getElementById('left-tab').textContent = open ? '\u2039' : '\u203a';
+  } else {
+    document.getElementById('hp-right-panel').classList.toggle('collapsed', !open);
+    document.getElementById('right-tab').textContent = open ? '\u203a' : '\u2039';
+  }
+}
+
+// ─── TOUCH DRAG-AND-DROP FOR BINS ────────────────────────────────────────────
+let _touchDrag = null;
+
+function _getTouchZone(clientX, clientY) {
+  const el = document.elementFromPoint(clientX, clientY);
+  return el?.closest('.shelf-drop-zone') || null;
+}
+
+function _createTouchGhost(bin) {
+  const px = PX();
+  const ghost = document.createElement('div');
+  ghost.id = 'touch-drag-ghost';
+  ghost.style.cssText = `position:fixed;pointer-events:none;z-index:99999;width:${bin.w*px}px;height:${bin.h*px}px;background:${bin.color};border-radius:4px;opacity:0.75;border:2px dashed rgba(255,255,255,0.5);`;
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function _removeTouchGhost() { document.getElementById('touch-drag-ghost')?.remove(); }
+
+function _positionTouchGhost(ghost, cx, cy, grabPx, bin) {
+  const px = PX();
+  ghost.style.left = (cx - (grabPx || bin.w*px/2)) + 'px';
+  ghost.style.top  = (cy - bin.h*px/2) + 'px';
+}
+
+function attachPaletteTouchDrag(el, bin) {
+  el.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    draggingBinDef = bin; draggingPlaced = null;
+    const ghost = _createTouchGhost(bin);
+    const grabPx = bin.w * PX() / 2;
+    _positionTouchGhost(ghost, t.clientX, t.clientY, grabPx, bin);
+    _touchDrag = { bin, grabPx, ghost };
+  }, { passive: false });
+}
+
+function attachPlacedBinTouchDrag(binEl, bin, rowId, unitId, shelfI, binI) {
+  binEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const rect = binEl.getBoundingClientRect();
+    const grabPx = t.clientX - rect.left;
+    draggingPlaced = { rowId, unitId, shelfI, binI, bin, grabOffsetPx: grabPx };
+    draggingBinDef = null;
+    const ghost = _createTouchGhost(bin);
+    _positionTouchGhost(ghost, t.clientX, t.clientY, grabPx, bin);
+    _touchDrag = { bin, grabPx, ghost };
+  }, { passive: false });
+}
+
+document.addEventListener('touchmove', (e) => {
+  if (!_touchDrag) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  _positionTouchGhost(_touchDrag.ghost, t.clientX, t.clientY, _touchDrag.grabPx, _touchDrag.bin);
+  document.querySelectorAll('.shelf-drop-zone').forEach(dz => dz.classList.remove('drag-over'));
+  const zone = _getTouchZone(t.clientX, t.clientY);
+  if (zone) zone.classList.add('drag-over');
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  if (!_touchDrag) return;
+  const t = e.changedTouches[0];
+  _removeTouchGhost();
+  document.querySelectorAll('.shelf-drop-zone').forEach(dz => dz.classList.remove('drag-over'));
+  const zone = _getTouchZone(t.clientX, t.clientY);
+  if (zone) {
+    const bin = _touchDrag.bin;
+    const xIn = getDropXIn(zone, t.clientX, bin.w);
+    const rowId  = zone.dataset.rowId;
+    const unitId = zone.dataset.unitId;
+    const shelfI = parseInt(zone.dataset.shelfI);
+    if (draggingPlaced) {
+      const oldRow  = rows.find(r => r.id === draggingPlaced.rowId);
+      const oldUnit = oldRow?.units.find(u => u.id === draggingPlaced.unitId);
+      if (oldUnit) oldUnit.shelves[draggingPlaced.shelfI].bins.splice(draggingPlaced.binI, 1);
+    }
+    const row  = rows.find(r => r.id === rowId);
+    const unit = row?.units.find(u => u.id === unitId);
+    if (unit) unit.shelves[shelfI].bins.push({ ...bin, x: xIn });
+    draggingBinDef = null; draggingPlaced = null;
+    renderCanvas();
+  } else {
+    draggingBinDef = null; draggingPlaced = null;
+  }
+  _touchDrag = null;
+});
+
+document.addEventListener('touchcancel', () => {
+  if (!_touchDrag) return;
+  _removeTouchGhost();
+  document.querySelectorAll('.shelf-drop-zone').forEach(dz => dz.classList.remove('drag-over'));
+  draggingBinDef = null; draggingPlaced = null; _touchDrag = null;
+});
+
 // ─── START ───────────────────────────────────────────────────────────────────
 init();
 </script>
 <script>
-  if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com') {
+  if ('serviceWorker' in navigator && location.hostname.endsWith('github.io')) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
         .catch(err => console.log('SW registration failed:', err));
