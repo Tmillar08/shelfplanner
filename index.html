@@ -1,0 +1,2710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ShelfPlanner — Uline Bin Layout Tool</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShelfPlanner">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1f2535;
+    --border: #2a3044;
+    --accent: #f0a500;
+    --accent2: #3b82f6;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --shelf-color: #8b6914;
+    --shelf-surface: #b8891c;
+    --upright: #4a5568;
+    --px-per-inch: 5.5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-right: 8px;
+  }
+  header .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    background: var(--border);
+    color: var(--text2);
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* ── LAYOUT ── */
+  .app {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    border-bottom: 1px solid var(--border);
+    padding: 14px;
+  }
+  .panel-section h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  /* Bin palette */
+  .bin-palette {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bin-category {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+  }
+  .bin-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: grab;
+    transition: border-color 0.15s, transform 0.1s;
+    user-select: none;
+  }
+  .bin-item:hover {
+    border-color: var(--accent);
+    transform: translateX(2px);
+  }
+  .bin-item:active { cursor: grabbing; transform: scale(0.97); }
+  .bin-swatch {
+    width: 28px;
+    height: 20px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .bin-info { flex: 1; min-width: 0; }
+  .bin-name {
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bin-dims {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text2);
+    margin-top: 1px;
+  }
+
+  /* Controls */
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .ctrl-row label {
+    font-size: 11px;
+    color: var(--text2);
+    flex: 1;
+  }
+  .ctrl-row input[type=number] {
+    width: 64px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--success); color: #000; }
+  .btn-blue { background: var(--accent2); color: #fff; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  .shelf-controls { display: flex; flex-direction: column; gap: 0; }
+
+  /* Stats */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-lbl {
+    font-size: 9px;
+    color: var(--text2);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── CANVAS AREA ── */
+  .canvas-area {
+    flex: 1;
+    overflow: auto;
+    background:
+      linear-gradient(rgba(180,185,195,0.35) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(180,185,195,0.35) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-color: #d8dce4;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: flex-start;
+  }
+
+  /* ── ROW OF SHELVES ── */
+  .shelf-row-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .shelf-row-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .shelf-row-label span {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--text2);
+  }
+  .shelf-row-label .row-actions { display: flex; gap: 5px; }
+  .shelf-row-units { display: flex; gap: 0; flex-wrap: nowrap; }
+
+  /* ── SINGLE SHELF UNIT ── */
+  .shelf-unit {
+    position: relative;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .shelf-unit-inner {
+    position: relative;
+  }
+
+  /* Uprights */
+  .upright {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(to right, #5a5f6b, #8a90a0, #5a5f6b);
+    border-radius: 2px;
+    z-index: 10;
+  }
+  .upright-left { left: 0; }
+  .upright-right { right: 0; }
+
+  /* Shelf plank */
+  .shelf-plank {
+    position: absolute;
+    background: linear-gradient(to bottom, #9aa0ae, #6e7480, #5a5f6b);
+    border-radius: 1px;
+    z-index: 9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor: default;
+  }
+  .shelf-plank::after {
+    content: '';
+    position: absolute;
+    inset: 2px 4px;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 11px,
+      rgba(0,0,0,0.1) 11px,
+      rgba(0,0,0,0.1) 13px
+    );
+    border-radius: 1px;
+    opacity: 0.5;
+  }
+
+  /* Drop zone on each shelf */
+  .shelf-drop-zone {
+    position: absolute;
+    z-index: 5;
+    transition: background 0.15s;
+  }
+  .shelf-drop-zone.drag-over {
+    background: rgba(240, 165, 0, 0.1);
+    outline: 1px dashed var(--accent);
+    outline-offset: -2px;
+    border-radius: 3px;
+  }
+
+  /* Bin on shelf */
+  .placed-bin {
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 3px 3px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: filter 0.15s;
+    z-index: 6;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .placed-bin:hover { filter: brightness(1.2); }
+  .placed-bin:hover .bin-delete-btn { opacity: 1; }
+  .placed-bin .bin-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    color: rgba(255,255,255,0.85);
+    text-align: center;
+    padding: 2px;
+    line-height: 1.2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    word-break: break-word;
+  }
+  .bin-delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    background: rgba(239,68,68,0.9);
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 9px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  /* Floor */
+  .shelf-floor {
+    background: linear-gradient(to bottom, #9aa0ae, #6e7480, #5a5f6b);
+    border-radius: 1px;
+    z-index: 9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+
+  /* Add shelf button */
+  .add-shelf-btn {
+    position: absolute;
+    right: -34px;
+    width: 24px;
+    height: 24px;
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    color: var(--text2);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: border-color 0.15s, color 0.15s;
+    z-index: 20;
+  }
+  .add-shelf-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Dimension label */
+  .dim-label {
+    position: absolute;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: rgba(15,17,23,0.97);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    max-width: 200px;
+    line-height: 1.6;
+  }
+  .tooltip.visible { display: block; }
+
+  /* Selection highlight */
+  .placed-bin.selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* Ghost drag image */
+  .drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    opacity: 0.75;
+    z-index: 9999;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  /* Overflow indicator */
+  .overflow-indicator {
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--danger);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Right panel */
+  .right-panel {
+    width: 200px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 11px;
+  }
+  .legend-swatch {
+    width: 20px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .selection-info {
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  .selection-info .si-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding: 3px 0;
+  }
+  .si-key { color: var(--text2); }
+  .si-val { font-family: 'DM Mono', monospace; color: var(--accent); }
+
+  .empty-msg {
+    color: var(--text2);
+    font-size: 11px;
+    text-align: center;
+    padding: 16px;
+    line-height: 1.5;
+  }
+
+  /* Selected shelf highlight */
+  .shelf-plank.shelf-selected {
+    background: linear-gradient(to bottom, #b8c0cc, #8a90a0, #6e7480);
+    box-shadow: 0 0 0 2px var(--accent), 0 2px 8px rgba(240,165,0,0.3);
+  }
+  .shelf-drop-zone.shelf-zone-selected {
+    background: rgba(240,165,0,0.06);
+    outline: 1px dashed rgba(240,165,0,0.35);
+    outline-offset: -2px;
+    border-radius: 3px;
+  }
+
+  /* Drop ghost preview */
+  .bin-drop-ghost {
+    pointer-events: none;
+    animation: ghostPulse 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes ghostPulse {
+    from { opacity: 0.6; }
+    to   { opacity: 1; }
+  }
+
+  /* Catalog filter badge */
+  .catalog-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    background: rgba(240,165,0,0.12);
+    border: 1px solid rgba(240,165,0,0.35);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .bin-item.bin-too-big {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  /* Shelf drag handle */
+  .shelf-drag-handle {
+    position: absolute;
+    left: 0; right: 0;
+    top: -5px;
+    height: 10px;
+    cursor: ns-resize;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shelf-drag-handle::after {
+    content: '⠿';
+    font-size: 9px;
+    color: rgba(255,220,100,0.5);
+    letter-spacing: 1px;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .shelf-drag-handle:hover::after { color: rgba(255,220,100,1); }
+  .shelf-drag-handle:hover { background: rgba(240,165,0,0.08); border-radius: 2px; }
+
+  /* Live drag ghost line */
+  .shelf-drag-ghost {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(240,165,0,0.7);
+    pointer-events: none;
+    z-index: 50;
+  }
+  .shelf-drag-active .shelf-plank { transition: none !important; }
+
+  /* Lock toggle button on plank */
+  .shelf-lock-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.4;
+    padding: 2px 3px;
+    line-height: 1;
+    z-index: 13;
+    transition: opacity 0.15s;
+  }
+  .shelf-lock-btn:hover { opacity: 1; }
+  .shelf-lock-btn.locked { opacity: 0.9; color: var(--accent); }
+  input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ShelfPlanner</h1>
+  <span class="tag">ULINE LAYOUT TOOL</span>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+    <button class="btn btn-secondary btn-sm" onclick="zoomOut()" title="Zoom out" style="padding:4px 8px;font-size:14px;line-height:1;">−</button>
+    <input id="zoom-slider" type="range" min="0.2" max="3" step="0.1" value="1"
+      style="width:90px;accent-color:var(--accent);cursor:pointer;"
+      oninput="setZoom(this.value)">
+    <button class="btn btn-secondary btn-sm" onclick="zoomIn()" title="Zoom in" style="padding:4px 8px;font-size:14px;line-height:1;">＋</button>
+    <span id="zoom-label" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);min-width:34px;text-align:center;">100%</span>
+    <button class="btn btn-blue btn-sm" onclick="zoomFit()" title="Fit to window" style="font-size:10px;">⊡ Fit</button>
+  </div>
+  <div class="header-actions" style="margin-left:12px;">
+    <button class="btn btn-secondary btn-sm" onclick="addShelfRow()">＋ Add Row</button>
+    <button class="btn btn-blue btn-sm" onclick="exportLayout()">⬇ Export JSON</button>
+    <button class="btn btn-secondary btn-sm" onclick="printLayout()">🖨 Print</button>
+    <button class="btn btn-secondary btn-sm" onclick="clearAll()">🗑 Clear All</button>
+    <button class="btn btn-sm" id="help-toggle-btn" onclick="toggleHelp()" style="background:#6366f1;color:#fff;border-color:#6366f1;">? Help</button>
+  </div>
+</header>
+
+<!-- HELP OVERLAY -->
+<div id="help-overlay" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:9999;"></div>
+<div class="app">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel" id="hp-left-panel">
+
+    <!-- Shelf Settings -->
+    <div class="panel-section" id="hp-unit-size">
+      <h3>Shelf Unit Size</h3>
+      <div class="ctrl-row">
+        <label>Width (in) — clear span</label>
+        <input type="number" id="unit-w" value="60" min="24" max="144" step="1" onchange="rebuildAll()">
+      </div>
+      <div class="ctrl-row">
+        <label>Height (in)</label>
+        <input type="number" id="unit-h" value="96" min="12" max="120" step="1" onchange="rebuildAll()">
+      </div>
+      <div class="ctrl-row">
+        <label>Depth (in)</label>
+        <input type="number" id="unit-d" value="36" min="12" max="60" step="1" onchange="updateStats()">
+      </div>
+      <div class="ctrl-row">
+        <label>Floor offset (in)</label>
+        <input type="number" id="unit-floor-offset" value="0" min="0" max="24" step="0.5" onchange="renderAll()">
+      </div>
+    </div>
+
+    <!-- Shelf spacing control -->
+    <div class="panel-section" id="hp-shelf-spacing">
+      <h3>Shelf Spacing</h3>
+      <div id="shelf-spacing-controls" class="shelf-controls">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Bins -->
+    <div class="panel-section" id="hp-bin-catalog" style="flex:1;min-height:0;">
+      <h3>Bin Catalog</h3>
+      <select id="bin-cat-filter" onchange="activeCatFilter=this.value;renderBinPalette()" style="
+        width:100%;margin-bottom:8px;padding:5px 8px;
+        background:var(--surface2);border:1px solid var(--border);
+        border-radius:5px;color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:11px;cursor:pointer;outline:none;
+      ">
+        <option value="">All Categories</option>
+      </select>
+      <div class="bin-palette" id="bin-palette">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvas" ondragover="onCanvasDragOver(event)" ondrop="onCanvasDrop(event)"
+    onwheel="if(event.ctrlKey||event.metaKey){event.preventDefault();event.deltaY<0?zoomIn():zoomOut();}">
+    <!-- shelf rows injected here -->
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel" id="hp-right-panel">
+    <div class="panel-section" id="hp-statistics">
+      <h3>Statistics</h3>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="stat-total-bins">0</div>
+          <div class="stat-lbl">TOTAL BINS</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-total-shelves">0</div>
+          <div class="stat-lbl">SHELF LEVELS</div>
+        </div>
+        <div class="stat-box" style="grid-column:1/-1">
+          <div class="stat-val" id="stat-fill">0%</div>
+          <div class="stat-lbl">AVG WIDTH FILL</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section" id="hp-selected-bin">
+      <h3>Selected Bin</h3>
+      <div id="selection-panel">
+        <div class="empty-msg">Click a placed bin to see details</div>
+      </div>
+    </div>
+
+    <div class="panel-section" id="hp-legend" style="flex:1">
+      <h3>Legend</h3>
+      <div id="legend-panel"></div>
+    </div>
+
+    <div class="panel-section" id="hp-shopping">
+      <h3>Shopping List</h3>
+      <div class="empty-msg" id="shopping-preview" style="text-align:left;padding:6px 0;">No bins placed yet</div>
+      <button class="btn btn-success btn-sm btn-full" style="margin-top:8px;" onclick="openShoppingList()">📋 View Full List</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Shopping List Modal -->
+<div id="shopping-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;width:560px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+    <!-- Modal header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--accent);">Shopping List</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);margin-top:2px;" id="list-subtitle">Uline Bin Order</div>
+      </div>
+      <button onclick="closeShoppingList()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:4px;" title="Close">✕</button>
+    </div>
+    <!-- Modal body -->
+    <div id="shopping-list-body" style="flex:1;overflow-y:auto;padding:16px 20px;"></div>
+    <!-- Modal footer -->
+    <div style="display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--border);">
+      <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="copyShoppingList()">📋 Copy to Clipboard</button>
+      <button class="btn btn-blue btn-sm" style="flex:1;" onclick="printShoppingList()">🖨 Print</button>
+      <button class="btn btn-success btn-sm" style="flex:1;" onclick="exportShoppingCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ─── BIN CATALOG ─────────────────────────────────────────────────────────────
+// Dimensions are OUTSIDE dims W × D × H in inches — sourced from uline.com/Grp_325/Plastic-Bins
+const BIN_CATALOG = [
+  // ── Stackable Bins (BL_305) — BLUE ─────────────────────────────────────────
+  { id:'stk-1', name:'Stackable 7.5×4×3"',    sku:'S-12414', w:7.5,  d:4,     h:3,    color:'#1a6dcc', cat:'Stackable Bins', price:1.35 },
+  { id:'stk-2', name:'Stackable 11×5.5×5"',   sku:'S-12415', w:11,   d:5.5,   h:5,    color:'#1a6dcc', cat:'Stackable Bins', price:2.15 },
+  { id:'stk-3', name:'Stackable 11×8×7"',     sku:'S-12416', w:11,   d:8,     h:7,    color:'#1a6dcc', cat:'Stackable Bins', price:3.45 },
+  { id:'stk-4', name:'Stackable 15×8×7"',     sku:'S-12419', w:15,   d:8,     h:7,    color:'#1a6dcc', cat:'Stackable Bins', price:4.75 },
+  { id:'stk-5', name:'Stackable 15×16.5×7"',  sku:'S-12420', w:15,   d:16.5,  h:7,    color:'#1a6dcc', cat:'Stackable Bins', price:6.95 },
+  { id:'stk-6', name:'Stackable 18×11×10"',   sku:'S-12421', w:18,   d:11,    h:10,   color:'#1a6dcc', cat:'Stackable Bins', price:7.50 },
+  // ── Shelf Bins 12" Deep (BL_8768) — GREEN ──────────────────────────────────
+  { id:'shb-1',  name:'Shelf Bin 2¾×12×4"',   sku:'S-15641', w:2.75, d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:0.95 },
+  { id:'shb-2',  name:'Shelf Bin 4×12×4"',     sku:'S-13396', w:4,    d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.15 },
+  { id:'shb-3',  name:'Shelf Bin 7×12×4"',     sku:'S-13397', w:7,    d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.55 },
+  { id:'shb-4',  name:'Shelf Bin 8½×12×4"',    sku:'S-13398', w:8.5,  d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.85 },
+  { id:'shb-5',  name:'Shelf Bin 11×12×4"',    sku:'S-19944', w:11,   d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.35 },
+  { id:'shb-6',  name:'Shelf Bin 4×12×6"',     sku:'S-16275', w:4,    d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.55 },
+  { id:'shb-7',  name:'Shelf Bin 7×12×6"',     sku:'S-16276', w:7,    d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.15 },
+  { id:'shb-8',  name:'Shelf Bin 8½×12×6"',    sku:'S-16277', w:8.5,  d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.55 },
+  { id:'shb-9',  name:'Shelf Bin 11×12×6"',    sku:'S-16278', w:11,   d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:3.15 },
+  { id:'shb-10', name:'Shelf Bin 4×12×8"',     sku:'S-23363', w:4,    d:12, h:8, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.95 },
+  { id:'shb-11', name:'Shelf Bin 7×12×8"',     sku:'S-23364', w:7,    d:12, h:8, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.75 },
+  // ── Shelf Bins 18" Deep (BL_8768) — RED ────────────────────────────────────
+  { id:'shb-12', name:'Shelf Bin 4×18×4"',     sku:'S-13399', w:4,    d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:1.65 },
+  { id:'shb-13', name:'Shelf Bin 7×18×4"',     sku:'S-13400', w:7,    d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:2.25 },
+  { id:'shb-14', name:'Shelf Bin 8½×18×4"',    sku:'S-13401', w:8.5,  d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:2.75 },
+  { id:'shb-15', name:'Shelf Bin 11×18×4"',    sku:'S-19945', w:11,   d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:3.45 },
+  { id:'shb-16', name:'Shelf Bin 4×18×6"',     sku:'S-15644', w:4,    d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:2.25 },
+  { id:'shb-17', name:'Shelf Bin 7×18×6"',     sku:'S-15645', w:7,    d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:3.15 },
+  { id:'shb-18', name:'Shelf Bin 8½×18×6"',    sku:'S-15646', w:8.5,  d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:3.75 },
+  { id:'shb-19', name:'Shelf Bin 11×18×6"',    sku:'S-15647', w:11,   d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:4.55 },
+  // ── Shelf Bins 24" Deep (BL_8768) — YELLOW ─────────────────────────────────
+  { id:'shb-20', name:'Shelf Bin 4×24×4"',     sku:'S-14625', w:4,    d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:2.35 },
+  { id:'shb-21', name:'Shelf Bin 7×24×4"',     sku:'S-14626', w:7,    d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:3.15 },
+  { id:'shb-22', name:'Shelf Bin 8½×24×4"',    sku:'S-14627', w:8.5,  d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:3.75 },
+  { id:'shb-23', name:'Shelf Bin 11×24×4"',    sku:'S-19946', w:11,   d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:4.75 },
+  { id:'shb-24', name:'Shelf Bin 4×24×6"',     sku:'S-23365', w:4,    d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:3.15 },
+  { id:'shb-25', name:'Shelf Bin 7×24×6"',     sku:'S-23366', w:7,    d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:4.25 },
+  { id:'shb-26', name:'Shelf Bin 8½×24×6"',    sku:'S-23085', w:8.5,  d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:4.95 },
+  { id:'shb-27', name:'Shelf Bin 11×24×6"',    sku:'S-23086', w:11,   d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:6.15 },
+  // ── Giant Stackable Bins (BL_315) — YELLOW ─────────────────────────────────
+  { id:'gnt-1', name:'Giant 15×20×12.5"',     sku:'S-17886', w:15,   d:20,    h:12.5, color:'#e6a800', cat:'Giant Stackable', price:9.95 },
+  { id:'gnt-2', name:'Giant 17.5×10.9×12.5"', sku:'S-17887', w:17.5, d:10.875,h:12.5, color:'#e6a800', cat:'Giant Stackable', price:10.95 },
+  { id:'gnt-3', name:'Giant 17.5×16.5×12.5"', sku:'S-17888', w:17.5, d:16.5,  h:12.5, color:'#e6a800', cat:'Giant Stackable', price:12.50 },
+  // ── Divider Boxes (BL_8821) — BLUE ─────────────────────────────────────────
+  { id:'div-1', name:'Divider Box 6.9×4×3"',   sku:'S-12414', w:6.875, d:4.125, h:3, color:'#1a6dcc', cat:'Divider Boxes', price:1.35 },
+  { id:'div-2', name:'Divider Box 10.9×6.9×5"',sku:'S-12415', w:10.875,d:6.875, h:5, color:'#1a6dcc', cat:'Divider Boxes', price:2.15 },
+  { id:'div-3', name:'Divider Box 13.9×8.6×6"',sku:'S-12416', w:13.875,d:8.625, h:6, color:'#1a6dcc', cat:'Divider Boxes', price:3.45 },
+  // ── Straight Wall Containers (BL_190) — RED ────────────────────────────────
+  { id:'swc-1', name:'SWC 15×12×7.5"',        sku:'S-19507', w:15,   d:12,    h:7.5,  color:'#c0392b', cat:'Straight Wall', price:5.75 },
+  { id:'swc-2', name:'SWC 15×12×9.5"',        sku:'S-19508', w:15,   d:12,    h:9.5,  color:'#c0392b', cat:'Straight Wall', price:6.95 },
+  { id:'swc-3', name:'SWC 24×15×5"',          sku:'S-22723', w:24,   d:15,    h:5,    color:'#c0392b', cat:'Straight Wall', price:7.50 },
+  { id:'swc-4', name:'SWC 24×15×7.5"',        sku:'S-19509', w:24,   d:15,    h:7.5,  color:'#c0392b', cat:'Straight Wall', price:8.95 },
+  { id:'swc-5', name:'SWC 24×15×9.5"',        sku:'S-19510', w:24,   d:15,    h:9.5,  color:'#c0392b', cat:'Straight Wall', price:10.50 },
+  { id:'swc-6', name:'SWC 24×15×14.5"',       sku:'S-20580', w:24,   d:15,    h:14.5, color:'#c0392b', cat:'Straight Wall', price:13.95 },
+  // ── Collapsible Straight Wall Container (BL_1470) — BLACK ──────────────────
+  { id:'cswc-1', name:'Collapsible SWC 24×16×12"', sku:'S-21123', w:24, d:16, h:12, color:'#2c2c2c', cat:'Collapsible SWC', price:18.50 },
+  // ── ESD Conductive Bins (BL_308) — BLACK ───────────────────────────────────
+  { id:'esd-1', name:'ESD Bin 5.5×4×3"',      sku:'S-18537', w:5.5,  d:4.125, h:3,    color:'#2c2c2c', cat:'ESD Conductive', price:3.95 },
+  { id:'esd-2', name:'ESD Bin 7.5×4×3"',      sku:'S-18538', w:7.5,  d:4.125, h:3,    color:'#2c2c2c', cat:'ESD Conductive', price:4.75 },
+  { id:'esd-3', name:'ESD Bin 11×5.5×5"',     sku:'S-18539', w:11,   d:5.5,   h:5,    color:'#2c2c2c', cat:'ESD Conductive', price:6.50 },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let rows = [];           // array of { id, units: [{id, shelves:[{height, bins:[...]}]}] }
+let selectedBin = null;  // { rowI, unitI, shelfI, binI }
+let selectedUnitId = null; // currently focused unit for shelf editing
+let selectedShelf = null;  // { rowId, unitId, shelfI } — selected shelf for context-aware catalog
+let draggingBinDef = null;
+let draggingPlaced = null; // { rowI, unitI, shelfI, binI }
+let dragInsertIndex = null; // where to insert during shelf reorder
+let rowCounter = 0;
+let unitCounter = 0;
+let zoomLevel = 1.0; // zoom multiplier
+let activeCatFilter = ''; // active category dropdown filter
+
+const BASE_PX = () => parseFloat(document.getElementById('unit-w').value) < 80 ? 6 : 5.5;
+const PX = () => BASE_PX() * zoomLevel;
+const unitW = () => parseFloat(document.getElementById('unit-w').value);
+const unitH = () => parseFloat(document.getElementById('unit-h').value);
+const floorOffset = () => parseFloat(document.getElementById('unit-floor-offset')?.value || 0);
+
+function setZoom(val) {
+  zoomLevel = Math.min(3, Math.max(0.2, parseFloat(val)));
+  const slider = document.getElementById('zoom-slider');
+  const label  = document.getElementById('zoom-label');
+  if (slider) slider.value = zoomLevel;
+  if (label)  label.textContent = Math.round(zoomLevel * 100) + '%';
+  renderCanvas();
+}
+function zoomIn()  { setZoom(Math.min(3,   Math.round((zoomLevel + 0.1) * 10) / 10)); }
+function zoomOut() { setZoom(Math.max(0.2, Math.round((zoomLevel - 0.1) * 10) / 10)); }
+function zoomFit() {
+  const canvas = document.getElementById('canvas');
+  if (!rows.length) { setZoom(1); return; }
+  // Estimate total row width at zoom=1, fit to canvas width
+  const canvasW = canvas.clientWidth - 40;
+  const unitCount = Math.max(...rows.map(r => r.units.length));
+  const uprightIn = 2;
+  const estUnitW  = (unitW() + uprightIn * 2) * BASE_PX() + 80; // +80 for dim lines
+  const totalW    = unitCount * estUnitW;
+  const fit = Math.max(0.2, Math.min(3, canvasW / totalW));
+  setZoom(Math.round(fit * 10) / 10);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  renderBinPalette();
+  addShelfRow();
+  updateStats();
+
+  // Keyboard shortcuts: Ctrl+= zoom in, Ctrl+- zoom out, Ctrl+0 fit
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); }
+      if (e.key === '-')                  { e.preventDefault(); zoomOut(); }
+      if (e.key === '0')                  { e.preventDefault(); zoomFit(); }
+    }
+  });
+}
+
+// ─── BIN PALETTE ─────────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+function darken(hex, amt=40) {
+  let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  r=Math.max(0,r-amt); g=Math.max(0,g-amt); b=Math.max(0,b-amt);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function lighten(hex, amt=40) {
+  let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,r+amt); g=Math.min(255,g+amt); b=Math.min(255,b+amt);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+// Build a mini CSS isometric box SVG for the palette thumbnail
+function boxSVG(color, w, d, h, maxW=48, maxH=40) {
+  // Isometric projection: x-axis goes right+down, y-axis goes left+down, z-axis goes up
+  const scale = Math.min(maxW / (w + d) * 1.4, maxH / (h + d * 0.5) * 1.4, 3.5);
+  const sw = w * scale, sd = d * scale * 0.5, sh = h * scale * 0.6;
+  const ox = sd;            // left offset so depth face visible
+  const oy = sh + sd * 0.5; // top offset
+  const top    = `M${ox},${oy} l${sw},0 l${-sd},${sd*0.5} l${-sw},0 Z`;
+  const front  = `M${ox},${oy} l0,${sh} l${sw},0 l0,${-sh} Z`;
+  const side   = `M${ox+sw},${oy} l${-sd},${sd*0.5} l0,${sh} l${sd},${-sd*0.5} Z`;
+  const totalW = sw + sd + 2;
+  const totalH = sh + sd * 0.5 + 2;
+  const cTop   = lighten(color, 50);
+  const cFront = color;
+  const cSide  = darken(color, 30);
+  return `<svg width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">
+    <path d="${top}" fill="${cTop}" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>
+    <path d="${front}" fill="${cFront}" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>
+    <path d="${side}" fill="${cSide}" stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>
+  </svg>`;
+}
+
+function renderBinPalette() {
+  const palette = document.getElementById('bin-palette');
+  palette.innerHTML = '';
+
+  // Populate dropdown on first call (idempotent after that)
+  const sel = document.getElementById('bin-cat-filter');
+  if (sel && sel.options.length === 1) {
+    const cats = [...new Set(BIN_CATALOG.map(b => b.cat))];
+    cats.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      sel.appendChild(opt);
+    });
+  }
+  if (sel) sel.value = activeCatFilter;
+
+  // Compute remaining width and bay height if a shelf is selected
+  let remainingW = null;
+  let bayH = null;
+  let selShelfLabel = null;
+
+  if (selectedShelf) {
+    const { rowId, unitId, shelfI } = selectedShelf;
+    const row = rows.find(r => r.id === rowId);
+    const unit = row?.units.find(u => u.id === unitId);
+    if (unit && unit.shelves[shelfI]) {
+      const shelf = unit.shelves[shelfI];
+      const usedW = shelf.bins.reduce((s, b) => s + b.w, 0);
+      remainingW = unitW() - usedW;
+      bayH = shelf.height;
+      const unitLabel = `R${rows.indexOf(row)+1}·U${unit.id.split('-')[1]}·S${shelfI+1}`;
+      selShelfLabel = `${unitLabel}  ${remainingW.toFixed(1)}" wide · ${bayH}" tall`;
+    }
+  }
+
+  // Filter badge
+  if (selShelfLabel !== null) {
+    const badge = document.createElement('div');
+    badge.className = 'catalog-filter-badge';
+    badge.innerHTML = `📐 ${selShelfLabel} <span style="cursor:pointer;opacity:0.6;" onclick="clearShelfSelection()" title="Show all">✕</span>`;
+    palette.appendChild(badge);
+  } else {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-family:"DM Mono",monospace;font-size:9px;color:var(--text2);margin-bottom:6px;line-height:1.4;';
+    hint.textContent = 'Click a shelf to filter bins by fit';
+    palette.appendChild(hint);
+  }
+
+  // Which categories to show — all or just the selected one
+  const allCats = [...new Set(BIN_CATALOG.map(b => b.cat))];
+  const visibleCats = activeCatFilter ? allCats.filter(c => c === activeCatFilter) : allCats;
+
+  visibleCats.forEach(cat => {
+    const binsInCat = BIN_CATALOG.filter(b => b.cat === cat);
+    const anyFits = remainingW === null || binsInCat.some(b => b.w <= remainingW + 0.01 && b.h <= bayH + 0.01);
+
+    const catEl = document.createElement('div');
+    catEl.className = 'bin-category';
+    catEl.textContent = cat;
+    catEl.style.opacity = anyFits ? '1' : '0.4';
+    palette.appendChild(catEl);
+
+    binsInCat.forEach(bin => {
+      const fits = remainingW === null || (bin.w <= remainingW + 0.01 && bin.h <= bayH + 0.01);
+
+      const el = document.createElement('div');
+      el.className = 'bin-item' + (fits ? '' : ' bin-too-big');
+      el.draggable = fits;
+      el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:' + (fits ? 'grab' : 'default') + ';border-radius:5px;border:1px solid var(--border);margin-bottom:3px;background:var(--surface2);transition:border-color 0.15s;';
+      const PALETTE_PX = 3.5;
+      const swW = Math.round(bin.w * PALETTE_PX);
+      const swH = Math.round(bin.h * PALETTE_PX);
+      el.innerHTML = `
+        <div style="flex-shrink:0;width:84px;height:46px;display:flex;align-items:flex-end;justify-content:flex-start;">
+          <div style="width:${swW}px;height:${swH}px;background:${bin.color};border-radius:2px;border:1px solid rgba(255,255,255,0.18);box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);"></div>
+        </div>
+        <div class="bin-info">
+          <div class="bin-name" style="font-size:10px;font-weight:600;color:var(--text);line-height:1.2;">${bin.name}</div>
+          <div class="bin-dims" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);margin-top:1px;">${bin.w}"W×${bin.d}"D×${bin.h}"H</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--accent);opacity:0.7;">${bin.sku} · $${(bin.price||0).toFixed(2)}</div>
+        </div>
+      `;
+      if (fits) {
+        el.addEventListener('mouseenter', () => el.style.borderColor = 'var(--accent)');
+        el.addEventListener('mouseleave', () => el.style.borderColor = 'var(--border)');
+        el.addEventListener('dragstart', e => {
+          draggingBinDef = bin;
+          draggingPlaced = null;
+          e.dataTransfer.effectAllowed = 'copy';
+          const ghost = document.createElement('div');
+          ghost.style.cssText = `position:fixed;top:-999px;left:-999px;width:${bin.w*PX()}px;height:${bin.h*PX()}px;background:${bin.color};border-radius:4px;opacity:0.8;pointer-events:none;`;
+          document.body.appendChild(ghost);
+          e.dataTransfer.setDragImage(ghost, bin.w*PX()/2, bin.h*PX()/2);
+          setTimeout(() => ghost.remove(), 0);
+        });
+        el.addEventListener('mouseenter', e => showTooltip(e, bin));
+        el.addEventListener('mouseleave', hideTooltip);
+      }
+      palette.appendChild(el);
+    });
+  });
+
+  // Legend
+  const legend = document.getElementById('legend-panel');
+  legend.innerHTML = '';
+  const cats2 = [...new Set(BIN_CATALOG.map(b => b.cat))];
+  cats2.forEach(cat => {
+    const first = BIN_CATALOG.find(b => b.cat === cat);
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div style="width:24px;height:18px;flex-shrink:0;">${boxSVG(first.color, 3, 2, 2, 24, 18)}</div><span>${cat}</span>`;
+    legend.appendChild(item);
+  });
+}
+
+function clearShelfSelection() {
+  selectedShelf = null;
+  refreshUI();
+}
+
+// ─── ROW MANAGEMENT ──────────────────────────────────────────────────────────
+function addShelfRow() {
+  const rowId = `row-${++rowCounter}`;
+  const row = { id: rowId, units: [] };
+  rows.push(row);
+  // addUnitToRow will unshift and auto-select
+  addUnitToRow(rowId);
+}
+
+function removeRow(rowId) {
+  rows = rows.filter(r => r.id !== rowId);
+  renderAll();
+}
+
+function addUnitToRow(rowId) {
+  const row = rows.find(r => r.id === rowId);
+  if (!row) return;
+  const uId = `unit-${++unitCounter}`;
+  const h = unitH();
+  // Three editable shelves at 27" each; top shelf = remaining height
+  const shelves = [
+    { height: 27, bins: [], locked: false },
+    { height: 27, bins: [], locked: false },
+    { height: 27, bins: [], locked: false },
+    { height: Math.max(4, h - 81), bins: [], locked: false }, // top = remaining
+  ];
+  row.units.push({ id: uId, shelves });
+  selectedUnitId = uId;
+  renderAll();
+}
+
+function removeUnit(rowId, unitId) {
+  const row = rows.find(r => r.id === rowId);
+  if (!row) return;
+  row.units = row.units.filter(u => u.id !== unitId);
+  if (selectedUnitId === unitId) {
+    // Select first remaining unit anywhere
+    const remaining = rows.flatMap(r => r.units);
+    selectedUnitId = remaining[0]?.id ?? null;
+  }
+  // Remove the row itself if empty
+  if (row.units.length === 0) {
+    rows = rows.filter(r => r.id !== rowId);
+  }
+  renderAll();
+}
+
+// (addShelfToUnit replaced by addShelfToRow in left panel)
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+// Full canvas rebuild — only when layout structure changes
+function renderCanvas() {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+
+  rows.forEach((row, rowI) => {
+    const rowWrapper = document.createElement('div');
+    rowWrapper.className = 'shelf-row-wrapper';
+    rowWrapper.id = row.id;
+
+    // Row label
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'shelf-row-label';
+    rowLabel.innerHTML = `
+      <span>ROW ${rowI + 1}</span>
+      <div class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="addUnitToRow('${row.id}')">＋ Unit</button>
+        <button class="btn btn-danger btn-sm" onclick="removeRow('${row.id}')">✕ Row</button>
+      </div>
+    `;
+    rowWrapper.appendChild(rowLabel);
+
+    // Units container
+    const unitsEl = document.createElement('div');
+    unitsEl.className = 'shelf-row-units';
+
+    row.units.forEach((unit, unitI) => {
+      unitsEl.appendChild(renderUnit(row, rowI, unit, unitI));
+    });
+
+    rowWrapper.appendChild(unitsEl);
+    canvas.appendChild(rowWrapper);
+  });
+
+  updateSpacingControls();
+  updateStats();
+  renderBinPalette();
+}
+
+// Lightweight refresh — updates highlights and panels without rebuilding canvas DOM
+function refreshUI() {
+  // Update unit selection outlines
+  document.querySelectorAll('.shelf-unit-inner').forEach(el => {
+    const uid = el.dataset.unitId;
+    const isSelected = uid === selectedUnitId;
+    el.style.outline = isSelected ? '2px solid var(--accent)' : '2px solid transparent';
+  });
+
+  // Update shelf plank highlights
+  document.querySelectorAll('.shelf-plank[data-shelf-key]').forEach(el => {
+    const key = el.dataset.shelfKey;
+    const isSelected = selectedShelf && `${selectedShelf.rowId}|${selectedShelf.unitId}|${selectedShelf.shelfI}` === key;
+    el.classList.toggle('shelf-selected', isSelected);
+  });
+
+  // Update drop zone highlights
+  document.querySelectorAll('.shelf-drop-zone').forEach(el => {
+    const key = `${el.dataset.rowId}|${el.dataset.unitId}|${el.dataset.shelfI}`;
+    const isSelected = selectedShelf && `${selectedShelf.rowId}|${selectedShelf.unitId}|${selectedShelf.shelfI}` === key;
+    el.classList.toggle('shelf-zone-selected', isSelected);
+  });
+
+  // Update bin selection outline
+  document.querySelectorAll('.placed-bin-front').forEach(el => {
+    const { rowId, unitId, shelfI, binI } = el.dataset;
+    const isSel = selectedBin &&
+      selectedBin.rowId === rowId &&
+      selectedBin.unitId === unitId &&
+      parseInt(selectedBin.shelfI) === parseInt(shelfI) &&
+      parseInt(selectedBin.binI) === parseInt(binI);
+    el.style.outline = isSel ? '2px solid var(--accent)' : '';
+    el.style.outlineOffset = isSel ? '1px' : '';
+  });
+
+  updateSpacingControls();
+  updateStats();
+  renderBinPalette();
+}
+
+// Keep old name as alias for backward compat with inline HTML onclick handlers
+function renderAll() { renderCanvas(); }
+
+function renderUnit(row, rowI, unit, unitI) {
+  const w = unitW();   // clear span between uprights (user-defined width)
+  const h = unitH();
+  const px = PX();
+
+  // Uprights are 2" wide each
+  const uprightInches = 2;
+  const uprightPx = Math.round(uprightInches * px);
+  const floorPx   = Math.round(3 * px);
+  const plankPx   = Math.round(3 * px);
+  const offsetPx  = Math.round(floorOffset() * px);  // how far floor beam is off the ground
+
+  // Add-on units (unitI > 0) share the previous unit's right upright as their left —
+  // so they only need one upright (right side). First unit needs both.
+  const isAddon = unitI > 0;
+  const leftUprightPx  = isAddon ? 0 : uprightPx;   // no left upright for add-ons
+  const rightUprightPx = uprightPx;                  // always have a right upright
+
+  const pxW      = Math.round(w * px);                          // clear span
+  const totalPxW = pxW + leftUprightPx + rightUprightPx;       // canvas width
+  const pxH      = Math.round(h * px);
+
+  const innerW = pxW;
+
+  // ── Build shelf slots at LITERAL heights — bottom→top, no stretching ──
+  // shelf[0] = floor-level bay (bottommost), shelf[n-1] = topmost bay.
+  // Any space above the topmost shelf is open upright — not forced to fill.
+  const shelfSlots = [];
+  let yFromBottom = 0; // px accumulated from top of floor beam, going upward
+  unit.shelves.forEach((shelf, i) => {
+    const slotPx = Math.round(shelf.height * px);
+    // topPx from top of inner container; floor beam sits at (pxH - offsetPx - floorPx)
+    const topPx = pxH - offsetPx - floorPx - yFromBottom - slotPx;
+    shelfSlots.push({ topPx, heightPx: slotPx, dataI: i });
+    yFromBottom += slotPx;
+  });
+  // Reverse so index 0 = topmost slot
+  shelfSlots.reverse();
+  const n = unit.shelves.length;
+
+  // ── Outer wrapper ──
+  const unitEl = document.createElement('div');
+  unitEl.className = 'shelf-unit';
+  const isLastUnit = unitI === row.units.length - 1;
+  // Extra width on last unit for dimension lines (10px gap + 6px ticks + 28px label area + 28px total dim)
+  const extraW = isLastUnit ? 80 : 2;
+  unitEl.style.cssText = `width:${totalPxW + extraW}px; height:${pxH + 32}px; flex-shrink:0; position:relative;`;
+
+  const inner = document.createElement('div');
+  inner.className = 'shelf-unit-inner';
+  const isSelected = selectedUnitId === unit.id;
+  inner.style.cssText = `width:${totalPxW}px; height:${pxH}px; position:relative; overflow:hidden; cursor:pointer;
+    outline:${isSelected ? '2px solid var(--accent)' : '2px solid transparent'};
+    outline-offset:2px;
+    border-radius:2px;
+    transition:outline-color 0.15s;`;
+  inner.dataset.unitId = unit.id;
+  inner.title = `Click to edit ${unit.id}`;
+  inner.addEventListener('click', (e) => {
+    // Only select if not clicking a bin or button
+    if (e.target.closest('.placed-bin') || e.target.closest('button')) return;
+    selectedUnitId = unit.id;
+    refreshUI();
+  });
+
+  // ── Uprights ──
+  if (!isAddon) {
+    const leftUpright = document.createElement('div');
+    leftUpright.className = 'upright upright-left';
+    leftUpright.style.width = `${uprightPx}px`;
+    inner.appendChild(leftUpright);
+  }
+
+  const rightUpright = document.createElement('div');
+  rightUpright.className = 'upright upright-right';
+  rightUpright.style.width = `${uprightPx}px`;
+  inner.appendChild(rightUpright);
+
+  // ── Floor beam ──
+  const floor = document.createElement('div');
+  floor.className = 'shelf-floor';
+  floor.style.cssText = `position:absolute; bottom:${offsetPx}px; left:${leftUprightPx}px; right:${rightUprightPx}px; height:${floorPx}px;`;
+  if (unitI === 0) {
+    const floorLabel = document.createElement('div');
+    floorLabel.style.cssText = `
+      position:absolute;
+      left:6px;
+      top:50%;
+      transform:translateY(-50%);
+      font-family:'DM Mono',monospace;
+      font-size:8px;
+      font-weight:500;
+      color:rgba(255,220,100,0.75);
+      letter-spacing:0.5px;
+      white-space:nowrap;
+      pointer-events:none;
+      text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    `;
+    floorLabel.textContent = 'FLOOR';
+    floor.appendChild(floorLabel);
+  }
+  inner.appendChild(floor);
+
+  // ── Shelves — iterate slots top→bottom ──
+  shelfSlots.forEach((slot, slotI) => {
+    const dataI = slot.dataI;
+    const shelf = unit.shelves[dataI];
+
+    // Plank sits at the BOTTOM edge of this slot
+    const plankTop = slot.topPx + slot.heightPx - plankPx;
+
+    const isFloor    = dataI === 0;
+    const isTopShelf = dataI === unit.shelves.length - 1;
+
+    const plank = document.createElement('div');
+    plank.className = 'shelf-plank';
+    const isShelfSelected = selectedShelf && selectedShelf.rowId === row.id && selectedShelf.unitId === unit.id && selectedShelf.shelfI === dataI;
+    if (isShelfSelected) plank.classList.add('shelf-selected');
+    plank.dataset.shelfKey = `${row.id}|${unit.id}|${dataI}`;
+    plank.style.cssText = `
+      position:absolute;
+      top:${plankTop}px;
+      left:${leftUprightPx}px;
+      right:${rightUprightPx}px;
+      height:${plankPx}px;
+      cursor:pointer;
+    `;
+    plank.title = isFloor ? 'Floor' : shelf.locked ? 'Locked — unlock to drag' : 'Drag to resize · Click to select';
+    plank.addEventListener('click', (e) => {
+      if (e.target.closest('.shelf-drag-handle') || e.target.closest('.shelf-lock-btn')) return;
+      e.stopPropagation();
+      if (isShelfSelected) {
+        selectedShelf = null;
+      } else {
+        selectedShelf = { rowId: row.id, unitId: unit.id, shelfI: dataI };
+        selectedUnitId = unit.id;
+      }
+      refreshUI();
+    });
+
+    // Lock button (not on floor shelf)
+    if (!isFloor) {
+      const lockBtn = document.createElement('button');
+      lockBtn.className = 'shelf-lock-btn' + (shelf.locked ? ' locked' : '');
+      lockBtn.textContent = shelf.locked ? '🔒' : '🔓';
+      lockBtn.title = shelf.locked ? 'Locked — click to unlock' : 'Click to lock position';
+      lockBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shelf.locked = !shelf.locked;
+        renderCanvas();
+      });
+      plank.appendChild(lockBtn);
+    }
+
+    // Drag handle — floor shelf is not draggable, locked shelves are not draggable
+    if (!isFloor && !shelf.locked) {
+      const handle = document.createElement('div');
+      handle.className = 'shelf-drag-handle';
+      handle.title = 'Drag to resize bay';
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startShelfDrag(e, row.id, unit.id, dataI);
+      });
+      plank.appendChild(handle);
+    }
+
+    // Shelf label — only on first unit so it doesn't repeat across add-on units
+    if (unitI === 0) {
+      const shelfLabel = document.createElement('div');
+      const labelText = dataI === 0 ? `S1 · ${shelf.height.toFixed(0)}"` : `S${dataI + 1} · ${shelf.height.toFixed(0)}"`;
+      shelfLabel.style.cssText = `
+        position:absolute;
+        left:6px;
+        top:50%;
+        transform:translateY(-50%);
+        font-family:'DM Mono',monospace;
+        font-size:8px;
+        font-weight:500;
+        color:rgba(255,220,100,0.85);
+        letter-spacing:0.5px;
+        white-space:nowrap;
+        pointer-events:none;
+        text-shadow:0 1px 2px rgba(0,0,0,0.9);
+        z-index:12;
+      `;
+      shelfLabel.textContent = labelText;
+      plank.appendChild(shelfLabel);
+    }
+
+    inner.appendChild(plank);
+
+    // Drop zone fills the bay ABOVE the plank
+    const dzTop = slot.topPx;
+    const dzHeight = slot.heightPx - plankPx;
+
+    const dropZone = document.createElement('div');
+    dropZone.className = 'shelf-drop-zone' + (isShelfSelected ? ' shelf-zone-selected' : '');
+    dropZone.style.cssText = `
+      position:absolute;
+      top:${dzTop}px;
+      left:${leftUprightPx + 2}px;
+      width:${innerW - 4}px;
+      height:${dzHeight}px;
+      overflow:hidden;
+    `;
+    dropZone.dataset.rowId = row.id;
+    dropZone.dataset.unitId = unit.id;
+    dropZone.dataset.shelfI = dataI;
+    dropZone.dataset.dzWidth = innerW - 4; // px width of zone
+    dropZone.dataset.shelfW = w;           // inch width of shelf
+
+    // Bins — render at their absolute x position
+    shelf.bins.forEach((bin, binI) => {
+      // Default x=0 for legacy bins without a position
+      if (bin.x == null) bin.x = 0;
+
+      const binEl = document.createElement('div');
+      binEl.className = 'placed-bin';
+      const bpxW = Math.round(bin.w * px);
+      const bpxH = Math.min(Math.round(bin.h * px), dzHeight - 4);
+      const depthPeek = Math.min(Math.round(bin.d * px * 0.18), 10);
+      const totalH = bpxH + depthPeek;
+      const bpxX = Math.round(bin.x * px);
+
+      binEl.style.cssText = `position:absolute; left:${bpxX}px; bottom:0; width:${bpxW}px; height:${totalH}px; overflow:visible;`;
+
+      // Front face
+      const front = document.createElement('div');
+      front.className = 'placed-bin-front';
+      front.dataset.rowId = row.id;
+      front.dataset.unitId = unit.id;
+      front.dataset.shelfI = dataI;
+      front.dataset.binI = binI;
+      front.style.cssText = `position:absolute;bottom:0;left:0;width:${bpxW}px;height:${bpxH}px;background:${bin.color};border-radius:2px 0 0 0;border:1px solid rgba(0,0,0,0.2);cursor:grab;`;
+
+      // Top face
+      const topFace = document.createElement('div');
+      topFace.style.cssText = `position:absolute;bottom:${bpxH}px;left:0;width:${bpxW}px;height:${depthPeek}px;background:${lighten(bin.color, 45)};border:1px solid rgba(0,0,0,0.15);`;
+
+      // Label
+      const label = document.createElement('div');
+      label.style.cssText = `position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:2px;font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.9);text-align:center;line-height:1.1;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,0.8);`;
+      if (bpxW > 24 && bpxH > 16) {
+        const shortName = bin.name.replace('Divider Box ', 'DB ').replace('Straight Wall Container ', 'SWC ').replace('SWC ', '').replace('ESD Bin ', 'ESD ');
+        label.textContent = shortName;
+      }
+      front.appendChild(label);
+
+      if (selectedBin && selectedBin.rowId === row.id && selectedBin.unitId === unit.id && selectedBin.shelfI === dataI && selectedBin.binI === binI) {
+        front.style.outline = '2px solid var(--accent)';
+        front.style.outlineOffset = '1px';
+      }
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'bin-delete-btn';
+      delBtn.textContent = '×';
+      delBtn.onclick = (e) => { e.stopPropagation(); removeBin(row.id, unit.id, dataI, binI); };
+      front.appendChild(delBtn);
+
+      binEl.appendChild(topFace);
+      binEl.appendChild(front);
+
+      // Drag to reposition
+      binEl.draggable = true;
+      binEl.addEventListener('dragstart', ev => {
+        // Record offset within the bin where user grabbed
+        const rect = binEl.getBoundingClientRect();
+        const grabOffsetPx = ev.clientX - rect.left;
+        draggingPlaced = { rowId: row.id, unitId: unit.id, shelfI: dataI, binI, bin, grabOffsetPx };
+        draggingBinDef = null;
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/plain', ''); // required for Firefox
+      });
+      binEl.addEventListener('click', () => selectBin(row.id, unit.id, dataI, binI, bin));
+      binEl.addEventListener('mouseenter', e => showTooltip(e, bin));
+      binEl.addEventListener('mouseleave', hideTooltip);
+
+      dropZone.appendChild(binEl);
+    });
+
+    dropZone.addEventListener('dragover', onShelfDragOver);
+    dropZone.addEventListener('drop', onShelfDrop);
+    dropZone.addEventListener('dragleave', onShelfDragLeave);
+
+    inner.appendChild(dropZone);
+  });
+
+  // ── Dimension lines — only on the LAST unit in the row to avoid clutter ──
+  if (isLastUnit) {
+    const dimLineX = totalPxW + 10; // px offset from inner left edge
+    const tickW = 6;
+    const lineColor = 'rgba(140,160,200,0.7)';
+    const textColor = '#8892a4';
+
+    shelfSlots.forEach((slot, slotI) => {
+      const dataI = slot.dataI;
+      const shelf = unit.shelves[dataI];
+      const bayTop = slot.topPx;
+      const bayBottom = slot.topPx + slot.heightPx - plankPx; // top of plank
+
+      // Vertical line
+      const vline = document.createElement('div');
+      vline.style.cssText = `position:absolute;left:${dimLineX}px;top:${bayTop}px;width:1px;height:${bayBottom - bayTop}px;background:${lineColor};pointer-events:none;z-index:15;`;
+      unitEl.appendChild(vline);
+
+      // Top tick
+      const tickTop = document.createElement('div');
+      tickTop.style.cssText = `position:absolute;left:${dimLineX - tickW / 2}px;top:${bayTop}px;width:${tickW}px;height:1px;background:${lineColor};pointer-events:none;z-index:15;`;
+      unitEl.appendChild(tickTop);
+
+      // Bottom tick (at top of plank)
+      const tickBot = document.createElement('div');
+      tickBot.style.cssText = `position:absolute;left:${dimLineX - tickW / 2}px;top:${bayBottom}px;width:${tickW}px;height:1px;background:${lineColor};pointer-events:none;z-index:15;`;
+      unitEl.appendChild(tickBot);
+
+      // Label — centered in the bay
+      const midY = bayTop + (bayBottom - bayTop) / 2;
+      const dimLabel = document.createElement('div');
+      dimLabel.style.cssText = `position:absolute;left:${dimLineX + 5}px;top:${midY}px;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:8px;color:${textColor};white-space:nowrap;pointer-events:none;z-index:15;line-height:1;`;
+      dimLabel.textContent = `${shelf.height.toFixed(1)}"`;
+      unitEl.appendChild(dimLabel);
+    });
+
+    // Overall height dimension line — from top of unit to top of floor beam
+    const ovX = dimLineX + 28;
+    const floorTop = pxH - offsetPx - floorPx; // top of floor beam in px from container top
+    const vlineAll = document.createElement('div');
+    vlineAll.style.cssText = `position:absolute;left:${ovX}px;top:0;width:1px;height:${floorTop}px;background:rgba(240,165,0,0.35);pointer-events:none;z-index:15;`;
+    unitEl.appendChild(vlineAll);
+    const tickAllTop = document.createElement('div');
+    tickAllTop.style.cssText = `position:absolute;left:${ovX - 4}px;top:0;width:8px;height:1px;background:rgba(240,165,0,0.5);pointer-events:none;z-index:15;`;
+    unitEl.appendChild(tickAllTop);
+    const tickAllBot = document.createElement('div');
+    tickAllBot.style.cssText = `position:absolute;left:${ovX - 4}px;top:${floorTop}px;width:8px;height:1px;background:rgba(240,165,0,0.5);pointer-events:none;z-index:15;`;
+    unitEl.appendChild(tickAllBot);
+    const labelAll = document.createElement('div');
+    labelAll.style.cssText = `position:absolute;left:${ovX + 5}px;top:${floorTop / 2}px;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:8px;color:rgba(240,165,0,0.7);white-space:nowrap;pointer-events:none;z-index:15;`;
+    labelAll.textContent = `${h}"H`;
+    unitEl.appendChild(labelAll);
+    // If offset > 0, add a small leg indicator
+    if (offsetPx > 2) {
+      const legLine = document.createElement('div');
+      legLine.style.cssText = `position:absolute;left:${ovX}px;top:${floorTop + floorPx}px;width:1px;height:${offsetPx}px;background:rgba(240,165,0,0.2);border-top:none;pointer-events:none;z-index:15;`;
+      unitEl.appendChild(legLine);
+      const legLabel = document.createElement('div');
+      legLabel.style.cssText = `position:absolute;left:${ovX + 5}px;top:${floorTop + floorPx + offsetPx / 2}px;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:7px;color:rgba(240,165,0,0.5);white-space:nowrap;pointer-events:none;z-index:15;`;
+      legLabel.textContent = `+${floorOffset()}"`;
+      unitEl.appendChild(legLabel);
+    }
+  }
+
+  // Bottom dimension label — OA width accounts for shared uprights
+  const oaWidth = isAddon
+    ? w + uprightInches          // only right upright is "new" metal; left is shared
+    : w + uprightInches * 2;     // first unit owns both uprights
+  const dimW = document.createElement('div');
+  dimW.style.cssText = `position:absolute; bottom:-20px; left:0; width:${totalPxW}px; text-align:center; font-family:'DM Mono',monospace; font-size:9px; color:var(--text2);`;
+  dimW.textContent = `${w}"clr · ${oaWidth}"OA · ${h}"H`;
+
+  unitEl.appendChild(inner);
+  unitEl.appendChild(dimW);
+  return unitEl;
+}
+
+// ─── SPACING CONTROLS ────────────────────────────────────────────────────────
+function updateSpacingControls() {
+  const ctrl = document.getElementById('shelf-spacing-controls');
+  ctrl.innerHTML = '';
+
+  if (rows.length === 0) {
+    ctrl.innerHTML = '<div class="empty-msg">Add a row first</div>';
+    return;
+  }
+
+  // Collect all units across all rows for the dropdown
+  const allUnits = [];
+  rows.forEach((row, rowI) => {
+    row.units.forEach((unit, unitI) => {
+      allUnits.push({ row, rowI, unit, unitI });
+    });
+  });
+
+  if (allUnits.length === 0) return;
+
+  // If nothing is selected (or selection got removed), default to first
+  if (!selectedUnitId || !allUnits.find(u => u.unit.id === selectedUnitId)) {
+    selectedUnitId = allUnits[0].unit.id;
+  }
+
+  const current = allUnits.find(u => u.unit.id === selectedUnitId);
+
+  // ── Unit selector dropdown ──
+  const selectorWrap = document.createElement('div');
+  selectorWrap.style.cssText = 'margin-bottom:10px;';
+
+  const selectLabel = document.createElement('div');
+  selectLabel.style.cssText = `font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);letter-spacing:1px;margin-bottom:4px;`;
+  selectLabel.textContent = 'EDITING UNIT';
+  selectorWrap.appendChild(selectLabel);
+
+  const select = document.createElement('select');
+  select.style.cssText = `
+    width:100%;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:5px;
+    padding:5px 8px;
+    font-family:'DM Mono',monospace;
+    font-size:11px;
+    cursor:pointer;
+  `;
+  allUnits.forEach(({ row, rowI, unit, unitI }) => {
+    const opt = document.createElement('option');
+    opt.value = unit.id;
+    opt.textContent = `Row ${rowI + 1} · Unit ${unitI + 1}  (${unit.shelves.length} shelves)`;
+    if (unit.id === selectedUnitId) opt.selected = true;
+    select.appendChild(opt);
+  });
+  select.addEventListener('change', () => {
+    selectedUnitId = select.value;
+    refreshUI();
+  });
+  selectorWrap.appendChild(select);
+
+  // Remove unit button sits right below the dropdown
+  const removeUnitBtn = document.createElement('button');
+  removeUnitBtn.className = 'btn btn-danger btn-sm btn-full';
+  removeUnitBtn.style.cssText = 'margin-top:6px;font-size:11px;justify-content:center;';
+  removeUnitBtn.innerHTML = '🗑 Remove Selected Unit';
+  removeUnitBtn.onclick = () => {
+    const target = allUnits.find(u => u.unit.id === selectedUnitId);
+    if (!target) return;
+    if (!confirm(`Remove Unit ${target.unitI + 1} from Row ${target.rowI + 1}? Any bins on it will be lost.`)) return;
+    removeUnit(target.row.id, target.unit.id);
+  };
+  selectorWrap.appendChild(removeUnitBtn);
+
+  ctrl.appendChild(selectorWrap);
+
+  // ── Shelf controls for selected unit ──
+  const { row, rowI, unit } = current;
+  const maxH = unitH();
+  const usedH = unit.shelves.reduce((s, sh) => s + sh.height, 0);
+  const over = usedH > maxH + 0.01;
+
+  // Add / Remove / Redistribute buttons
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:4px;margin-bottom:8px;';
+  btnRow.innerHTML = `
+    <button class="btn btn-secondary btn-sm" style="flex:1;font-size:10px;" onclick="addShelfToUnit2('${row.id}','${unit.id}')">＋ Shelf</button>
+    <button class="btn btn-danger btn-sm" style="flex:1;font-size:10px;" onclick="removeLastShelfFromUnit('${row.id}','${unit.id}')">− Shelf</button>
+    <button class="btn btn-blue btn-sm" style="padding:4px 8px;font-size:10px;" title="Redistribute evenly" onclick="redistributeUnit('${row.id}','${unit.id}')">⟳</button>
+  `;
+  ctrl.appendChild(btnRow);
+
+  // Per-shelf number inputs — bottom shelves are editable, top shelf is auto = remaining height
+  const topIdx = unit.shelves.length - 1;
+  // Sync top shelf to remaining (pure display — doesn't affect lower shelf maxes)
+  const lowerSum = unit.shelves.slice(0, topIdx).reduce((s, sh) => s + sh.height, 0);
+  unit.shelves[topIdx].height = Math.max(4, parseFloat((maxH - lowerSum).toFixed(2)));
+
+  unit.shelves.forEach((shelf, i) => {
+    const isTop = i === topIdx;
+    const label = i === 0 ? 'S1 (floor)' : `S${i + 1}${isTop ? ' (top)' : ''}`;
+
+    // For lower shelves: inputMax = maxH minus the sum of all OTHER lower shelves (ignoring top)
+    // Top shelf absorbs the rest, so it never constrains lower shelves beyond "others need ≥4" each
+    const otherLowerSum = unit.shelves
+      .slice(0, topIdx)
+      .reduce((s, sh, j) => j === i ? s : s + sh.height, 0);
+    const inputMax = parseFloat((maxH - 4 - otherLowerSum).toFixed(1)); // reserve 4" for top shelf minimum
+
+    const row2 = document.createElement('div');
+    row2.style.cssText = `display:flex;align-items:center;gap:6px;padding:5px 8px;background:${isTop ? 'rgba(240,165,0,0.07)' : 'var(--surface2)'};border:1px solid ${isTop ? 'rgba(240,165,0,0.3)' : 'var(--border)'};border-radius:5px;margin-bottom:3px;`;
+
+    if (isTop) {
+      const lockIcon = shelf.locked ? '🔒' : '🔓';
+      row2.innerHTML = `
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);flex:1;white-space:nowrap;">${label}</span>
+        <input
+          type="number" min="4" max="${inputMax}" step="0.5"
+          value="${shelf.height.toFixed(1)}"
+          ${shelf.locked ? 'disabled title="Unlock to edit"' : ''}
+          style="width:52px;background:var(--bg);border:1px solid rgba(240,165,0,0.3);color:${shelf.locked ? 'var(--text2)' : 'var(--accent)'};border-radius:4px;padding:3px 5px;font-family:'DM Mono',monospace;font-size:11px;text-align:right;opacity:${shelf.locked ? '0.5' : '1'};"
+          onchange="updateShelfHeight('${row.id}', '${unit.id}', ${i}, this.value, this)"
+          oninput="liveValidateShelfInput(this, ${inputMax})"
+        >
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);">"</span>
+        <button title="${shelf.locked ? 'Locked' : 'Unlocked'}" onclick="toggleShelfLock('${row.id}','${unit.id}',${i})"
+          style="background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:${shelf.locked ? '1' : '0.4'}">${lockIcon}</button>
+      `;
+    } else {
+      const isFloor = i === 0;
+      const lockIcon = shelf.locked ? '🔒' : '🔓';
+      const lockTitle = shelf.locked ? 'Locked' : 'Unlocked';
+      row2.innerHTML = `
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);flex:1;white-space:nowrap;">${label}</span>
+        <input
+          type="number" min="4" max="${inputMax}" step="0.5"
+          value="${shelf.height.toFixed(1)}"
+          ${shelf.locked ? 'disabled title="Unlock to edit"' : ''}
+          style="width:52px;background:var(--bg);border:1px solid var(--border);color:${shelf.locked ? 'var(--text2)' : 'var(--text)'};border-radius:4px;padding:3px 5px;font-family:'DM Mono',monospace;font-size:11px;text-align:right;opacity:${shelf.locked ? '0.5' : '1'};"
+          onchange="updateShelfHeight('${row.id}', '${unit.id}', ${i}, this.value, this)"
+          oninput="liveValidateShelfInput(this, ${inputMax})"
+        >
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);">"</span>
+        ${!isFloor ? `<button title="${lockTitle}" onclick="toggleShelfLock('${row.id}','${unit.id}',${i})"
+          style="background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:${shelf.locked ? '1' : '0.4'}">${lockIcon}</button>` : ''}
+      `;
+    }
+    ctrl.appendChild(row2);
+  });
+
+  // Total indicator
+  const remaining = maxH - usedH;
+  const totalRow = document.createElement('div');
+  totalRow.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:${over ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.08)'};border:1px solid ${over ? 'var(--danger)' : 'var(--border)'};margin-top:4px;`;
+  totalRow.innerHTML = `
+    <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);">USED / MAX</span>
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:${over ? 'var(--danger)' : 'var(--success)'};">
+      ${usedH.toFixed(1)}" / ${maxH}" <span style="color:var(--text2);font-size:9px;">(${remaining.toFixed(1)}" free)</span>
+    </span>
+  `;
+  ctrl.appendChild(totalRow);
+}
+
+function toggleShelfLock(rowId, unitId, shelfI) {
+  const row  = rows.find(r => r.id === rowId);
+  const unit = row?.units.find(u => u.id === unitId);
+  if (!unit) return;
+  unit.shelves[shelfI].locked = !unit.shelves[shelfI].locked;
+  renderCanvas();
+}
+
+function liveValidateShelfInput(inputEl, maxH) {
+  const v = parseFloat(inputEl.value);
+  inputEl.style.borderColor = (isNaN(v) || v < 4 || v > maxH) ? 'var(--danger)' : 'var(--border)';
+}
+
+function updateShelfHeight(rowId, unitId, shelfI, val, inputEl) {
+  const maxH = unitH();
+  let v = parseFloat(val);
+  if (isNaN(v) || v < 4) v = 4;
+
+  const row = rows.find(r => r.id === rowId);
+  if (!row) return;
+  const unit = row.units.find(u => u.id === unitId);
+  if (!unit) return;
+
+  const topIdx = unit.shelves.length - 1;
+
+  // Clamp: other lower shelves need ≥4" each; top shelf absorbs the rest
+  const otherLowerSum = unit.shelves
+    .slice(0, topIdx)
+    .reduce((s, sh, i) => i === shelfI ? s : s + sh.height, 0);
+  const maxAllowed = maxH - 4 - otherLowerSum; // reserve 4" min for top shelf
+  if (v > maxAllowed) v = maxAllowed;
+
+  unit.shelves[shelfI].height = v;
+  inputEl.value = v.toFixed(1);
+
+  // Sync top shelf = remaining height (only if we didn't just edit the top shelf itself)
+  if (shelfI !== topIdx) {
+    const lowerSum = unit.shelves.slice(0, topIdx).reduce((s, sh) => s + sh.height, 0);
+    unit.shelves[topIdx].height = Math.max(4, parseFloat((maxH - lowerSum).toFixed(2)));
+  }
+
+  renderCanvas();
+}
+
+// Add a shelf — inserts a new 4" shelf just below the top shelf, top shelf auto-shrinks to remaining
+function addShelfToUnit2(rowId, unitId) {
+  const row = rows.find(r => r.id === rowId);
+  const unit = row?.units.find(u => u.id === unitId);
+  if (!unit) return;
+  if (unit.shelves.length >= 12) return;
+  const maxH = unitH();
+  const topIdx = unit.shelves.length - 1;
+  const lowerSum = unit.shelves.slice(0, topIdx).reduce((s, sh) => s + sh.height, 0);
+  const topRemaining = maxH - lowerSum;
+  if (topRemaining < 8) {  // need at least 4" for new + 4" for top
+    alert(`Not enough room — top shelf has only ${topRemaining.toFixed(1)}" remaining.`);
+    return;
+  }
+  // Insert 4" shelf just before the top shelf
+  unit.shelves.splice(topIdx, 0, { height: 4, bins: [], locked: false });
+  // Sync new top shelf to remaining
+  const newTopIdx = unit.shelves.length - 1;
+  const newLowerSum = unit.shelves.slice(0, newTopIdx).reduce((s, sh) => s + sh.height, 0);
+  unit.shelves[newTopIdx].height = Math.max(4, parseFloat((maxH - newLowerSum).toFixed(2)));
+  renderCanvas();
+}
+
+// Remove the shelf just below the top shelf; top shelf re-syncs to remaining
+function removeLastShelfFromUnit(rowId, unitId) {
+  const row = rows.find(r => r.id === rowId);
+  const unit = row?.units.find(u => u.id === unitId);
+  if (!unit || unit.shelves.length <= 2) return;  // keep at least floor + top
+  // Remove second-to-last (just below the top shelf)
+  unit.shelves.splice(unit.shelves.length - 2, 1);
+  // Sync top shelf to remaining
+  const maxH = unitH();
+  const topIdx = unit.shelves.length - 1;
+  const lowerSum = unit.shelves.slice(0, topIdx).reduce((s, sh) => s + sh.height, 0);
+  unit.shelves[topIdx].height = Math.max(4, parseFloat((maxH - lowerSum).toFixed(2)));
+  renderCanvas();
+}
+
+// Redistribute a specific unit evenly
+function redistributeUnit(rowId, unitId) {
+  const row = rows.find(r => r.id === rowId);
+  const unit = row?.units.find(u => u.id === unitId);
+  if (!unit) return;
+  const maxH = unitH();
+  const n = unit.shelves.length;
+  const evenH = parseFloat((maxH / n).toFixed(2));
+  unit.shelves = unit.shelves.map((sh, i) => ({
+    ...sh,
+    height: i === n - 1 ? parseFloat((maxH - evenH * (n - 1)).toFixed(2)) : evenH
+  }));
+  renderCanvas();
+}
+
+// ─── SHELF DRAG ENGINE ───────────────────────────────────────────────────────
+// Dragging shelf[shelfI] moves the plank between shelf[shelfI-1] and shelf[shelfI].
+// shelf[shelfI].height   = bay ABOVE this plank (shrinks when dragged down)
+// shelf[shelfI-1].height = bay BELOW this plank (grows when dragged down)
+// Locked shelves above or below this plank are skipped — their neighbours absorb instead.
+
+let _sd = null; // active shelf drag state
+
+function startShelfDrag(e, rowId, unitId, shelfI) {
+  const row   = rows.find(r => r.id === rowId);
+  const unit  = row?.units.find(u => u.id === unitId);
+  if (!unit) return;
+
+  const px   = PX();
+  const maxH = unitH();
+
+  // The plank being dragged separates shelf[shelfI-1] (below) and shelf[shelfI] (above)
+  // Collect the full stack heights for clamping
+  _sd = {
+    rowId, unitId, shelfI,
+    startY:     e.clientY,
+    startBelow: unit.shelves[shelfI - 1].height, // bay below the dragged plank
+    startAbove: unit.shelves[shelfI].height,      // bay above the dragged plank
+    px,
+    unit,
+  };
+
+  document.addEventListener('mousemove', onShelfDragMove);
+  document.addEventListener('mouseup',   onShelfDragUp);
+  document.body.style.cursor = 'ns-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function onShelfDragMove(e) {
+  if (!_sd) return;
+  const { unit, shelfI, startY, startBelow, startAbove, px } = _sd;
+
+  // Delta in inches (positive = dragged down = below bay grows, above bay shrinks)
+  const dyPx = e.clientY - startY;
+  const dyIn = dyPx / px;
+
+  // Round to nearest 0.5"
+  const snap = Math.round(dyIn * 2) / 2;
+
+  // Find the shelf below that will absorb the change.
+  // shelf[belowIdx].height is the bay we'd shrink when dragging down.
+  // A locked shelf[belowIdx+1] means "protect the bay beneath me" — skip it.
+  let belowIdx = shelfI - 1;
+  while (belowIdx > 0 && unit.shelves[belowIdx + 1]?.locked) belowIdx--;
+
+  // Find the shelf above that will absorb the change.
+  // shelf[aboveIdx].height is the bay we'd shrink when dragging up.
+  // A locked shelf[aboveIdx+1] means "protect the bay beneath me" — skip it.
+  const topIdx = unit.shelves.length - 1;
+  let aboveIdx = shelfI;
+  while (aboveIdx < topIdx && unit.shelves[aboveIdx + 1]?.locked) aboveIdx++;
+
+  // Original heights for the two affected shelves
+  const origBelow = unit.shelves[belowIdx].height;
+  const origAbove = unit.shelves[aboveIdx].height;
+
+  const MIN = 4; // minimum bay height in inches
+
+  // Clamp snap so neither bay goes below minimum
+  const clampedSnap = Math.max(
+    snap,
+    -(origAbove - MIN)   // can't shrink above bay below MIN
+  );
+  const finalSnap = Math.min(
+    clampedSnap,
+    origBelow - MIN      // can't shrink below bay below MIN
+  );
+
+  // Apply
+  unit.shelves[belowIdx].height = parseFloat((origBelow - finalSnap).toFixed(2));
+  unit.shelves[aboveIdx].height = parseFloat((origAbove + finalSnap).toFixed(2));
+
+  // Only auto-sync top shelf if it wasn't the one being dragged
+  if (aboveIdx !== topIdx) {
+    const lowerSum = unit.shelves.slice(0, topIdx).reduce((s, sh) => s + sh.height, 0);
+    unit.shelves[topIdx].height = Math.max(MIN, parseFloat((unitH() - lowerSum).toFixed(2)));
+  }
+
+  renderCanvas();
+
+  // Re-stash starting heights against current so next move delta is incremental
+  _sd.startY     = e.clientY;
+  _sd.startBelow = unit.shelves[belowIdx].height;
+  _sd.startAbove = unit.shelves[aboveIdx].height;
+}
+
+function onShelfDragUp() {
+  _sd = null;
+  document.removeEventListener('mousemove', onShelfDragMove);
+  document.removeEventListener('mouseup',   onShelfDragUp);
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  renderCanvas();
+}
+
+// ─── FREE-POSITION BIN DRAG & DROP ───────────────────────────────────────────
+
+function getDropXIn(zone, clientX, binW) {
+  const rect = zone.getBoundingClientRect();
+  const px = BASE_PX() * zoomLevel;
+  const shelfW = parseFloat(zone.dataset.shelfW);
+  const grabOffsetIn = (draggingPlaced?.grabOffsetPx || 0) / px;
+  let xIn = (clientX - rect.left) / px - grabOffsetIn;
+  xIn = Math.round(xIn * 4) / 4; // snap 0.25"
+  return Math.max(0, Math.min(shelfW - binW, xIn));
+}
+
+function updateDropGhost(zone, clientX) {
+  zone.querySelectorAll('.bin-drop-ghost').forEach(el => el.remove());
+  const binDef = draggingBinDef || draggingPlaced?.bin;
+  if (!binDef) return;
+  const px = BASE_PX() * zoomLevel;
+  const xIn = getDropXIn(zone, clientX, binDef.w);
+  const ghost = document.createElement('div');
+  ghost.className = 'bin-drop-ghost';
+  ghost.style.cssText = `
+    position:absolute;left:${Math.round(xIn * px)}px;bottom:0;
+    width:${Math.round(binDef.w * px)}px;height:calc(100% - 2px);
+    background:rgba(240,165,0,0.18);border:2px dashed var(--accent);
+    border-radius:2px;pointer-events:none;z-index:20;
+  `;
+  zone.appendChild(ghost);
+}
+
+function onShelfDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = draggingBinDef ? 'copy' : 'move';
+  e.currentTarget.classList.add('drag-over');
+  updateDropGhost(e.currentTarget, e.clientX);
+}
+
+function onShelfDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+    e.currentTarget.querySelectorAll('.bin-drop-ghost').forEach(el => el.remove());
+  }
+}
+
+function onShelfDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const zone = e.currentTarget;
+  zone.classList.remove('drag-over');
+  zone.querySelectorAll('.bin-drop-ghost').forEach(el => el.remove());
+
+  const rowId  = zone.dataset.rowId;
+  const unitId = zone.dataset.unitId;
+  const shelfI = parseInt(zone.dataset.shelfI);
+  const row    = rows.find(r => r.id === rowId);
+  const unit   = row?.units.find(u => u.id === unitId);
+  if (!unit) return;
+
+  if (draggingBinDef) {
+    const xIn = getDropXIn(zone, e.clientX, draggingBinDef.w);
+    unit.shelves[shelfI].bins.push({ ...draggingBinDef, x: xIn });
+    selectedShelf = { rowId, unitId, shelfI };
+    selectedUnitId = unitId;
+  } else if (draggingPlaced) {
+    const srcRow  = rows.find(r => r.id === draggingPlaced.rowId);
+    const srcUnit = srcRow?.units.find(u => u.id === draggingPlaced.unitId);
+    if (srcUnit) {
+      const [moved] = srcUnit.shelves[draggingPlaced.shelfI].bins.splice(draggingPlaced.binI, 1);
+      moved.x = getDropXIn(zone, e.clientX, moved.w);
+      unit.shelves[shelfI].bins.push(moved);
+    }
+    draggingPlaced = null;
+  }
+
+  draggingBinDef = null;
+  renderCanvas();
+}
+
+function onCanvasDragOver(e) { e.preventDefault(); }
+function onCanvasDrop(e) { e.preventDefault(); }
+
+// ─── BIN REMOVAL ─────────────────────────────────────────────────────────────
+function removeBin(rowId, unitId, shelfI, binI) {
+  const row = rows.find(r => r.id === rowId);
+  const unit = row?.units.find(u => u.id === unitId);
+  if (!unit) return;
+  unit.shelves[shelfI].bins.splice(binI, 1);
+  if (selectedBin?.rowId === rowId && selectedBin?.unitId === unitId && selectedBin?.shelfI === shelfI && selectedBin?.binI === binI) {
+    selectedBin = null;
+  }
+  // Keep selectedShelf so catalog refreshes with updated remaining space
+  renderCanvas();
+}
+
+// ─── SELECTION ───────────────────────────────────────────────────────────────
+function selectBin(rowId, unitId, shelfI, binI, bin) {
+  selectedBin = { rowId, unitId, shelfI, binI };
+  const panel = document.getElementById('selection-panel');
+  panel.innerHTML = `
+    <div class="selection-info">
+      <div class="si-row"><span class="si-key">Name</span><span class="si-val">${bin.name}</span></div>
+      <div class="si-row"><span class="si-key">SKU</span><span class="si-val">${bin.sku}</span></div>
+      <div class="si-row"><span class="si-key">Width</span><span class="si-val">${bin.w}"</span></div>
+      <div class="si-row"><span class="si-key">Depth</span><span class="si-val">${bin.d}"</span></div>
+      <div class="si-row"><span class="si-key">Height</span><span class="si-val">${bin.h}"</span></div>
+      <div class="si-row"><span class="si-key">Category</span><span class="si-val">${bin.cat}</span></div>
+    </div>
+    <button class="btn btn-danger btn-sm btn-full" style="margin-top:8px" onclick="removeBin('${rowId}','${unitId}',${shelfI},${binI})">Remove Bin</button>
+  `;
+  refreshUI();
+}
+
+// ─── STATS ───────────────────────────────────────────────────────────────────
+function updateStats() {
+  let totalBins = 0, totalShelves = 0, fillSum = 0, fillCount = 0;
+  const w = unitW();
+  rows.forEach(row => {
+    row.units.forEach(unit => {
+      unit.shelves.forEach(shelf => {
+        totalShelves++;
+        totalBins += shelf.bins.length;
+        if (shelf.bins.length > 0) {
+          const bw = shelf.bins.reduce((s, b) => s + b.w, 0);
+          fillSum += Math.min(bw / w, 1);
+          fillCount++;
+        }
+      });
+    });
+  });
+  document.getElementById('stat-total-bins').textContent = totalBins;
+  document.getElementById('stat-total-shelves').textContent = totalShelves;
+  document.getElementById('stat-fill').textContent = fillCount > 0 ? Math.round(fillSum / fillCount * 100) + '%' : '0%';
+  updateShoppingPreview();
+}
+
+// ─── TOOLTIP ─────────────────────────────────────────────────────────────────
+function showTooltip(e, bin) {
+  const t = document.getElementById('tooltip');
+  t.innerHTML = `<strong>${bin.name}</strong><br>SKU: ${bin.sku}<br>W: ${bin.w}" · D: ${bin.d}" · H: ${bin.h}"<br>Cat: ${bin.cat}`;
+  t.classList.add('visible');
+  moveTooltip(e);
+}
+function hideTooltip() { document.getElementById('tooltip').classList.remove('visible'); }
+document.addEventListener('mousemove', e => {
+  const t = document.getElementById('tooltip');
+  if (t.classList.contains('visible')) {
+    t.style.left = (e.clientX + 14) + 'px';
+    t.style.top = (e.clientY - 10) + 'px';
+  }
+});
+function moveTooltip(e) {
+  const t = document.getElementById('tooltip');
+  t.style.left = (e.clientX + 14) + 'px';
+  t.style.top = (e.clientY - 10) + 'px';
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+
+function rebuildAll() { renderCanvas(); }
+
+function clearAll() {
+  if (!confirm('Clear all rows and bins?')) return;
+  rows = [];
+  selectedBin = null;
+  addShelfRow();
+}
+
+function exportLayout() {
+  const data = {
+    shelfDimensions: { w: unitW(), h: unitH(), d: parseFloat(document.getElementById('unit-d').value) },
+    rows: rows.map(r => ({
+      id: r.id,
+      units: r.units.map(u => ({
+        id: u.id,
+        shelves: u.shelves.map(s => ({
+          height: s.height,
+          bins: s.bins.map(b => ({ sku: b.sku, name: b.name, w: b.w, d: b.d, h: b.h }))
+        }))
+      }))
+    }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shelf-layout.json';
+  a.click();
+}
+
+// ─── SHOPPING LIST ───────────────────────────────────────────────────────────
+
+// Tally all placed bins across every shelf → { sku: { bin, qty } }
+function buildShoppingList() {
+  const tally = {};
+  rows.forEach(row => {
+    row.units.forEach(unit => {
+      unit.shelves.forEach(shelf => {
+        shelf.bins.forEach(bin => {
+          if (!tally[bin.sku]) {
+            tally[bin.sku] = { bin: { ...bin }, qty: 0 };
+          }
+          tally[bin.sku].qty++;
+        });
+      });
+    });
+  });
+  // Sort by category then name
+  return Object.values(tally).sort((a, b) =>
+    a.bin.cat.localeCompare(b.bin.cat) || a.bin.name.localeCompare(b.bin.name)
+  );
+}
+
+// Update the small preview in the right panel
+function updateShoppingPreview() {
+  const preview = document.getElementById('shopping-preview');
+  if (!preview) return;
+  const items = buildShoppingList();
+  if (items.length === 0) {
+    preview.innerHTML = '<span style="color:var(--text2);font-size:11px;">No bins placed yet</span>';
+    return;
+  }
+  const MAX_PREVIEW = 5;
+  let html = '';
+  items.slice(0, MAX_PREVIEW).forEach(({ bin, qty }) => {
+    html += `
+      <div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border);">
+        <div style="width:10px;height:10px;border-radius:2px;background:${bin.color};flex-shrink:0;"></div>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${bin.sku}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);font-weight:600;">×${qty}</span>
+      </div>`;
+  });
+  if (items.length > MAX_PREVIEW) {
+    html += `<div style="font-size:10px;color:var(--text2);margin-top:4px;">+${items.length - MAX_PREVIEW} more SKUs…</div>`;
+  }
+  preview.innerHTML = html;
+}
+
+function openShoppingList() {
+  const items = buildShoppingList();
+  const modal = document.getElementById('shopping-modal');
+  const body = document.getElementById('shopping-list-body');
+  const subtitle = document.getElementById('list-subtitle');
+
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  const totalCost = items.reduce((s, i) => s + (i.bin.price || 0) * i.qty, 0);
+  subtitle.textContent = `${totalQty} bin${totalQty !== 1 ? 's' : ''} · ${items.length} SKU${items.length !== 1 ? 's' : ''} · est. $${totalCost.toFixed(2)}`;
+
+  if (items.length === 0) {
+    body.innerHTML = '<div style="color:var(--text2);text-align:center;padding:32px;font-size:13px;">No bins placed on any shelves yet.<br>Drag bins from the catalog onto a shelf first.</div>';
+  } else {
+    // Group by category
+    const byCategory = {};
+    items.forEach(item => {
+      const cat = item.bin.cat;
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(item);
+    });
+
+    let html = '';
+    Object.entries(byCategory).forEach(([cat, catItems]) => {
+      const catTotal = catItems.reduce((s, { bin, qty }) => s + (bin.price || 0) * qty, 0);
+      html += `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin:12px 0 6px;">
+          <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;">${cat}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);">subtotal $${catTotal.toFixed(2)}</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:4px 6px;font-weight:500;">SKU</th>
+              <th style="text-align:left;padding:4px 6px;font-weight:500;">Description</th>
+              <th style="text-align:right;padding:4px 6px;font-weight:500;">W×D×H (in)</th>
+              <th style="text-align:right;padding:4px 6px;font-weight:500;">Qty</th>
+              <th style="text-align:right;padding:4px 6px;font-weight:500;">Unit $</th>
+              <th style="text-align:right;padding:4px 6px;font-weight:500;">Ext. $</th>
+              <th style="padding:4px 6px;"></th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      catItems.forEach(({ bin, qty }) => {
+        const ext = ((bin.price || 0) * qty).toFixed(2);
+        html += `
+            <tr style="border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+              <td style="padding:7px 6px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div style="width:10px;height:10px;border-radius:2px;background:${bin.color};flex-shrink:0;"></div>
+                  <a href="https://www.uline.com/Product/Detail/${bin.sku}" target="_blank"
+                     style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);text-decoration:none;font-weight:500;"
+                     title="View on Uline.com">${bin.sku}</a>
+                </div>
+              </td>
+              <td style="padding:7px 6px;font-size:12px;">${bin.name}</td>
+              <td style="padding:7px 6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);text-align:right;white-space:nowrap;">${bin.w}×${bin.d}×${bin.h}</td>
+              <td style="padding:7px 6px;text-align:right;">
+                <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);">${qty}</span>
+              </td>
+              <td style="padding:7px 6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);text-align:right;">$${(bin.price||0).toFixed(2)}</td>
+              <td style="padding:7px 6px;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--text);text-align:right;">$${ext}</td>
+              <td style="padding:7px 6px;text-align:right;">
+                <a href="https://www.uline.com/Product/Detail/${bin.sku}" target="_blank"
+                   style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text2);text-decoration:none;padding:2px 6px;border:1px solid var(--border);border-radius:3px;white-space:nowrap;"
+                   title="Order on Uline.com">uline ↗</a>
+              </td>
+            </tr>`;
+      });
+
+      html += `</tbody></table>`;
+    });
+
+    // Grand total row
+    html += `
+      <div style="margin-top:16px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);">TOTAL UNITS</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${totalQty}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);">EST. TOTAL COST</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--success);">$${totalCost.toFixed(2)}</span>
+        </div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text2);margin-top:6px;opacity:0.7;">
+          ⚠ Prices are estimates — verify current pricing at <a href="https://www.uline.com" target="_blank" style="color:var(--accent2);">uline.com</a> before ordering.
+        </div>
+      </div>`;
+
+    body.innerHTML = html;
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeShoppingList() {
+  document.getElementById('shopping-modal').style.display = 'none';
+}
+
+// Close modal on backdrop click
+document.getElementById('shopping-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeShoppingList();
+});
+
+function copyShoppingList() {
+  const items = buildShoppingList();
+  if (items.length === 0) { alert('No bins to copy.'); return; }
+  const lines = ['Uline Bin Shopping List', '─'.repeat(40)];
+  let lastCat = '';
+  items.forEach(({ bin, qty }) => {
+    if (bin.cat !== lastCat) { lines.push(''); lines.push(`[ ${bin.cat} ]`); lastCat = bin.cat; }
+    lines.push(`${bin.sku.padEnd(12)} ${bin.name.padEnd(20)} ${bin.w}"×${bin.d}"×${bin.h}"   qty: ${qty}`);
+  });
+  lines.push('');
+  lines.push(`Total: ${items.reduce((s, i) => s + i.qty, 0)} bins`);
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => alert('Shopping list copied to clipboard!'))
+    .catch(() => alert('Copy failed — please use Export CSV instead.'));
+}
+
+function printShoppingList() {
+  const items = buildShoppingList();
+  if (items.length === 0) { alert('No bins to print.'); return; }
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  const totalCost = items.reduce((s, { bin, qty }) => s + (bin.price || 0) * qty, 0);
+  let rows_html = items.map(({ bin, qty }) => {
+    const ext = ((bin.price || 0) * qty).toFixed(2);
+    return `<tr>
+      <td>${bin.sku}</td>
+      <td>${bin.name}</td>
+      <td>${bin.cat}</td>
+      <td>${bin.w}" × ${bin.d}" × ${bin.h}"</td>
+      <td style="text-align:center;font-weight:700;">${qty}</td>
+      <td style="text-align:right;">$${(bin.price||0).toFixed(2)}</td>
+      <td style="text-align:right;font-weight:700;">$${ext}</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Uline Shopping List</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 12px; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #f0f0f0; padding: 8px 10px; text-align: left; border-bottom: 2px solid #ccc; }
+    td { padding: 7px 10px; border-bottom: 1px solid #e5e5e5; }
+    .totals-row { margin-top: 16px; display:flex; justify-content:space-between; align-items:center; background:#f7f7f7; padding:12px 16px; border:1px solid #ddd; border-radius:4px; }
+    .disclaimer { margin-top:10px; font-size:11px; color:#888; }
+    @media print { button { display: none; } }
+  </style></head><body>
+  <h1>🗒 Uline Bin Shopping List</h1>
+  <div class="subtitle">Generated ${new Date().toLocaleDateString()}</div>
+  <table>
+    <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Dimensions</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Unit $</th><th style="text-align:right;">Ext. $</th></tr></thead>
+    <tbody>${rows_html}</tbody>
+  </table>
+  <div class="totals-row">
+    <span style="font-weight:600;">Total: ${totalQty} bins · ${items.length} SKUs</span>
+    <span style="font-size:18px;font-weight:700;">Est. Total: $${totalCost.toFixed(2)}</span>
+  </div>
+  <div class="disclaimer">⚠ Prices are estimates — verify current pricing at uline.com before ordering.</div>
+  <br><button onclick="window.print()">🖨 Print</button>
+  </body></html>`);
+  win.document.close();
+}
+
+function exportShoppingCSV() {
+  const items = buildShoppingList();
+  if (items.length === 0) { alert('No bins to export.'); return; }
+  const header = 'SKU,Name,Category,Width (in),Depth (in),Height (in),Quantity,Unit Price,Extended Price,Uline URL';
+  const csvRows = items.map(({ bin, qty }) => {
+    const ext = ((bin.price || 0) * qty).toFixed(2);
+    return `${bin.sku},"${bin.name}","${bin.cat}",${bin.w},${bin.d},${bin.h},${qty},$${(bin.price||0).toFixed(2)},$${ext},https://www.uline.com/Product/Detail/${bin.sku}`;
+  });
+  const total = items.reduce((s, { bin, qty }) => s + (bin.price || 0) * qty, 0);
+  const csv = [header, ...csvRows, `,,,,,,,,EST. TOTAL,$${total.toFixed(2)},`].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'uline-shopping-list.csv';
+  a.click();
+}
+
+// ─── PRINT LAYOUT ─────────────────────────────────────────────────────────────
+function printLayout() {
+  const canvasEl = document.getElementById('canvas');
+  const canvasHTML = canvasEl.innerHTML;
+
+  // Capture all inline styles from canvas children so they render correctly
+  const styleSheets = Array.from(document.styleSheets).map(ss => {
+    try { return Array.from(ss.cssRules).map(r => r.cssText).join('\n'); }
+    catch { return ''; }
+  }).join('\n');
+
+  // Build shopping list rows for the print page
+  const items = buildShoppingList();
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  let shoppingHTML = '';
+  if (items.length > 0) {
+    const totalCost = items.reduce((s, { bin, qty }) => s + (bin.price || 0) * qty, 0);
+    let lastCat = '';
+    const rows = items.map(({ bin, qty }) => {
+      const catRow = bin.cat !== lastCat
+        ? `<tr class="cat-row"><td colspan="6">${bin.cat}</td></tr>`
+        : '';
+      lastCat = bin.cat;
+      const ext = ((bin.price || 0) * qty).toFixed(2);
+      return `${catRow}<tr>
+        <td><a href="https://www.uline.com/Product/Detail/${bin.sku}" target="_blank">${bin.sku}</a></td>
+        <td>${bin.name}</td>
+        <td>${bin.w}" × ${bin.d}" × ${bin.h}"</td>
+        <td class="qty">${qty}</td>
+        <td style="text-align:right;">$${(bin.price||0).toFixed(2)}</td>
+        <td style="text-align:right;font-weight:700;">$${ext}</td>
+      </tr>`;
+    }).join('');
+    shoppingHTML = `
+      <section class="shopping">
+        <h2>Shopping List <span class="total">${totalQty} bins · est. $${totalCost.toFixed(2)}</span></h2>
+        <table>
+          <thead><tr><th>SKU</th><th>Name</th><th>Dimensions</th><th>Qty</th><th style="text-align:right;">Unit $</th><th style="text-align:right;">Ext. $</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr style="background:#e8eaf0;font-weight:700;">
+            <td colspan="3" style="text-align:right;padding:8px 10px;">EST. TOTAL</td>
+            <td class="qty">${totalQty}</td>
+            <td></td>
+            <td style="text-align:right;padding:8px 10px;">$${totalCost.toFixed(2)}</td>
+          </tr></tfoot>
+        </table>
+        <div style="margin-top:8px;font-size:11px;color:#888;">⚠ Prices are estimates — verify at uline.com before ordering.</div>
+      </section>`;
+  }
+
+  const unitW = document.getElementById('unit-w').value;
+  const unitH = document.getElementById('unit-h').value;
+  const unitD = document.getElementById('unit-d').value;
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('Pop-up blocked! Please allow pop-ups for this page and try again.');
+    return;
+  }
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ShelfPlanner — Layout Print</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=DM+Mono&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      padding: 28px 32px;
+    }
+
+    /* ── Reuse all the canvas styles ── */
+    ${styleSheets}
+
+    /* ── Override dark colors for print ── */
+    :root {
+      --bg: #d8dce4;
+      --surface: #f0f2f5;
+      --surface2: #e4e7ec;
+      --border: #c0c5d0;
+      --accent: #d4900a;
+      --accent2: #1d4ed8;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --text: #111;
+      --text2: #555;
+    }
+
+    .app, .left-panel, .right-panel, header, .canvas-area { all: unset; display: block; }
+
+    /* ── Print header ── */
+    .print-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #2c2c2c;
+    }
+    .print-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .print-header .meta {
+      font-size: 12px;
+      color: #555;
+    }
+    .print-header .date {
+      margin-left: auto;
+      font-size: 11px;
+      color: #888;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Canvas wrapper ── */
+    .canvas-wrap {
+      background: #d8dce4;
+      background-image:
+        linear-gradient(rgba(150,155,165,0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(150,155,165,0.3) 1px, transparent 1px);
+      background-size: 20px 20px;
+      border: 1px solid #b0b5c0;
+      border-radius: 6px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      align-items: flex-start;
+      overflow: visible;
+    }
+
+    /* ── Shopping list ── */
+    .shopping {
+      margin-top: 28px;
+      page-break-before: auto;
+    }
+    .shopping h2 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .shopping .total {
+      font-size: 12px;
+      font-weight: 400;
+      color: #666;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead tr { background: #1f2535; color: #fff; }
+    thead th { padding: 7px 10px; text-align: left; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f4f5f8; }
+    tbody td { padding: 6px 10px; border-bottom: 1px solid #dde; }
+    tbody td a { color: #1a56c4; text-decoration: none; }
+    .cat-row td {
+      background: #e8eaf0;
+      font-weight: 700;
+      font-size: 11px;
+      color: #333;
+      padding: 4px 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .qty { text-align: center; font-weight: 700; }
+
+    @media print {
+      body { padding: 12px 16px; }
+      .canvas-wrap { border: none; background: #d8dce4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cat-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-header">
+  <h1>ShelfPlanner</h1>
+  <span class="meta">Uline Layout · ${unitW}" W × ${unitH}" H × ${unitD}" D</span>
+  <span class="date">${new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}</span>
+</div>
+
+<div class="canvas-wrap">${canvasHTML}</div>
+
+${shoppingHTML}
+
+<script>
+  // Strip interactive controls that don't make sense on print
+  document.querySelectorAll('.shelf-drag-handle, .bin-delete-btn, .add-shelf-btn, .shelf-lock-btn').forEach(el => el.remove());
+  window.onload = () => { window.print(); };
+<\/script>
+</body>
+</html>`);
+  win.document.close();
+}
+
+// ─── HELP OVERLAY ────────────────────────────────────────────────────────────
+let helpActive = false;
+
+const HELP_PANELS = [
+  {
+    id: 'hp-unit-size',
+    label: 'Shelf Unit Size',
+    desc: 'Set the width, height, depth & floor offset for all shelf units',
+    color: '#6366f1',
+  },
+  {
+    id: 'hp-shelf-spacing',
+    label: 'Shelf Spacing',
+    desc: 'Pick a unit, then add/remove/redistribute shelves. Drag planks to resize. 🔒 to lock a bay height.',
+    color: '#6366f1',
+  },
+  {
+    id: 'hp-bin-catalog',
+    label: 'Bin Catalog',
+    desc: 'Drag a bin onto any shelf. Click a shelf first to filter bins that actually fit.',
+    color: '#6366f1',
+  },
+  {
+    id: 'canvas',
+    label: 'Layout Canvas',
+    desc: 'Your shelf layout. Click a shelf plank to select it. Drag planks to resize bays. Ctrl+scroll to zoom.',
+    color: '#f0a500',
+  },
+  {
+    id: 'hp-statistics',
+    label: 'Statistics',
+    desc: 'Live totals: bins placed, shelf levels, and average width fill %.',
+    color: '#22c55e',
+  },
+  {
+    id: 'hp-selected-bin',
+    label: 'Selected Bin',
+    desc: 'Details for the last bin you clicked — SKU, dimensions, Uline link.',
+    color: '#22c55e',
+  },
+  {
+    id: 'hp-legend',
+    label: 'Legend',
+    desc: 'Color key for all bin categories currently placed on shelves.',
+    color: '#22c55e',
+  },
+  {
+    id: 'hp-shopping',
+    label: 'Shopping List',
+    desc: 'Aggregated quantity list ready to order. Export as CSV or open a printable page.',
+    color: '#22c55e',
+  },
+];
+
+function toggleHelp() {
+  helpActive = !helpActive;
+  const btn = document.getElementById('help-toggle-btn');
+  const overlay = document.getElementById('help-overlay');
+
+  if (helpActive) {
+    btn.style.background = '#4f46e5';
+    btn.style.boxShadow = '0 0 0 2px #a5b4fc';
+    btn.textContent = '✕ Help';
+    overlay.style.display = 'block';
+    renderHelpOverlay();
+  } else {
+    btn.style.background = '#6366f1';
+    btn.style.boxShadow = '';
+    btn.textContent = '? Help';
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+  }
+}
+
+function renderHelpOverlay() {
+  const overlay = document.getElementById('help-overlay');
+  overlay.innerHTML = '';
+
+  HELP_PANELS.forEach(({ id, label, desc, color }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return;
+
+    // Outline box
+    const box = document.createElement('div');
+    box.style.cssText = `
+      position: fixed;
+      top: ${r.top}px;
+      left: ${r.left}px;
+      width: ${r.width}px;
+      height: ${r.height}px;
+      border: 2px solid ${color};
+      border-radius: 6px;
+      box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+      pointer-events: none;
+      box-sizing: border-box;
+    `;
+    // Don't use clip for every panel — just highlight with glow
+    box.style.boxShadow = `inset 0 0 0 2px ${color}44, 0 0 12px ${color}66`;
+
+    // Label chip — position at top-left of box
+    const chip = document.createElement('div');
+    const chipTop = r.top < 36 ? r.top + r.height + 4 : r.top - 28;
+    chip.style.cssText = `
+      position: fixed;
+      top: ${chipTop}px;
+      left: ${r.left + 8}px;
+      background: ${color};
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 3px 10px 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: ${Math.min(r.width - 16, 340)}px;
+    `;
+    chip.innerHTML = `<span style="font-size:13px;opacity:0.85">◈</span> <span>${label}</span>`;
+
+    // Tooltip with description — show below chip
+    const tip = document.createElement('div');
+    const tipTop = chipTop + 26;
+    tip.style.cssText = `
+      position: fixed;
+      top: ${tipTop}px;
+      left: ${r.left + 8}px;
+      background: rgba(15,17,23,0.96);
+      color: #c8cdd8;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border-left: 3px solid ${color};
+      white-space: normal;
+      max-width: ${Math.min(r.width - 16, 300)}px;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 10000;
+    `;
+    tip.textContent = desc;
+
+    overlay.appendChild(box);
+    overlay.appendChild(chip);
+    overlay.appendChild(tip);
+  });
+
+  // Dim overlay behind everything
+  const dim = document.createElement('div');
+  dim.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.38);
+    pointer-events: none;
+    z-index: -1;
+  `;
+  overlay.appendChild(dim);
+}
+
+// Re-render overlay on resize so positions stay accurate
+window.addEventListener('resize', () => { if (helpActive) renderHelpOverlay(); });
+
+// ─── START ───────────────────────────────────────────────────────────────────
+init();
+</script>
+<script>
+  if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
