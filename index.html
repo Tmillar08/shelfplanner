@@ -676,9 +676,6 @@
     <button class="btn btn-secondary btn-sm" onclick="addShelfRow()">＋ Add Row</button>
     <button class="btn btn-blue btn-sm" onclick="exportLayout()">⬇ Export JSON</button>
     <button class="btn btn-secondary btn-sm" onclick="printLayout()">🖨 Print</button>
-    <button class="btn btn-success btn-sm" onclick="saveToLocalCache(true)">💾 Save</button>
-    <button class="btn btn-secondary btn-sm" onclick="clearLocalCache()">🧹 Clear Saved</button>
-    <span id="save-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);min-width:72px;text-align:left;">Not saved</span>
     <button class="btn btn-secondary btn-sm" onclick="clearAll()">🗑 Clear All</button>
     <button class="btn btn-sm" id="help-toggle-btn" onclick="toggleHelp()" style="background:#6366f1;color:#fff;border-color:#6366f1;">? Help</button>
   </div>
@@ -710,6 +707,28 @@
       <div class="ctrl-row">
         <label>Floor offset (in)</label>
         <input type="number" id="unit-floor-offset" value="0" min="0" max="24" step="0.5" onchange="renderAll()">
+      </div>
+    </div>
+
+    <!-- Saved Layout -->
+    <div class="panel-section" id="hp-saved-layout">
+      <h3>Saved Layout</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn btn-success btn-sm btn-full" onclick="saveToLocalCache(true)">💾 Save Layout</button>
+        <button class="btn btn-secondary btn-sm btn-full" onclick="clearLocalCache()">🧹 Clear Saved Layout</button>
+        <div id="save-status" style="
+          font-family:'DM Mono',monospace;
+          font-size:9px;
+          color:var(--text2);
+          padding:6px 8px;
+          background:var(--surface2);
+          border:1px solid var(--border);
+          border-radius:5px;
+          text-align:center;
+        ">Not saved</div>
+        <div style="font-size:10px;color:var(--text2);line-height:1.4;">
+          Auto-saves changes in this browser so you can pick up where you left off.
+        </div>
       </div>
     </div>
 
@@ -2766,6 +2785,12 @@ const HELP_PANELS = [
     label: 'Shelf Spacing',
     desc: 'Pick a unit, then add/remove/redistribute shelves. Drag planks to resize. 🔒 to lock a bay height.',
     color: '#6366f1',
+  },
+  {
+    id: 'hp-saved-layout',
+    label: 'Saved Layout',
+    desc: 'Save manually or let ShelfPlanner auto-save your layout in this browser.',
+    color: '#22c55e',
   },
   {
     id: 'hp-bin-catalog',
