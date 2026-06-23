@@ -813,214 +813,68 @@
 <!-- Tooltip -->
 <div class="tooltip" id="tooltip"></div>
 
+<script>
 // ─── BIN CATALOG ─────────────────────────────────────────────────────────────
-// Uline Plastic Stackable Bins
-// Source table uses OUTSIDE DIMENSIONS as L × W × H.
-// ShelfPlanner stores outside dimensions as W × D × H, so:
-//   w = Uline outside W
-//   d = Uline outside L
-//   h = Uline outside H
-//
-// Inside dimensions are stored as insideL / insideW / insideH for reference.
-// Existing ShelfPlanner rendering uses the outside w / d / h values.
-
+// Dimensions are OUTSIDE dims W × D × H in inches — sourced from uline.com/Grp_325/Plastic-Bins
 const BIN_CATALOG = [
-  {
-    id: 'stk-s12413',
-    name: 'Stackable Bin 5½×4×3"',
-    sku: 'S-12413',
-    w: 4,
-    d: 5.5,
-    h: 3,
-    insideL: 4.875,
-    insideW: 3.5625,
-    insideH: 2.625,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12414',
-    name: 'Stackable Bin 7½×4×3"',
-    sku: 'S-12414',
-    w: 4,
-    d: 7.5,
-    h: 3,
-    insideL: 6.8125,
-    insideW: 3.5,
-    insideH: 2.625,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s20581',
-    name: 'Stackable Bin 9½×6×5"',
-    sku: 'S-20581',
-    w: 6,
-    d: 9.5,
-    h: 5,
-    insideL: 8.5,
-    insideW: 5.125,
-    insideH: 4.5,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s13536',
-    name: 'Stackable Bin 11×4×4"',
-    sku: 'S-13536',
-    w: 4,
-    d: 11,
-    h: 4,
-    insideL: 10.375,
-    insideW: 3.1875,
-    insideH: 3.5,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12415',
-    name: 'Stackable Bin 11×5½×5"',
-    sku: 'S-12415',
-    w: 5.5,
-    d: 11,
-    h: 5,
-    insideL: 10.25,
-    insideW: 4.375,
-    insideH: 4.5,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12416',
-    name: 'Stackable Bin 11×8×7"',
-    sku: 'S-12416',
-    w: 8,
-    d: 11,
-    h: 7,
-    insideL: 10.25,
-    insideW: 6.875,
-    insideH: 6.375,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12417',
-    name: 'Stackable Bin 11×11×5"',
-    sku: 'S-12417',
-    w: 11,
-    d: 11,
-    h: 5,
-    insideL: 10.25,
-    insideW: 10,
-    insideH: 4.5,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s13537',
-    name: 'Stackable Bin 11×16½×5"',
-    sku: 'S-13537',
-    w: 16.5,
-    d: 11,
-    h: 5,
-    insideL: 10.3125,
-    insideW: 15.125,
-    insideH: 4.375,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12418',
-    name: 'Stackable Bin 15×5½×5"',
-    sku: 'S-12418',
-    w: 5.5,
-    d: 15,
-    h: 5,
-    insideL: 14.125,
-    insideW: 4.5,
-    insideH: 4.5,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12419',
-    name: 'Stackable Bin 15×8×7"',
-    sku: 'S-12419',
-    w: 8,
-    d: 15,
-    h: 7,
-    insideL: 13.75,
-    insideW: 6.875,
-    insideH: 6.375,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12420',
-    name: 'Stackable Bin 15×16½×7"',
-    sku: 'S-12420',
-    w: 16.5,
-    d: 15,
-    h: 7,
-    insideL: 13.8125,
-    insideW: 14.9375,
-    insideH: 6.3125,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s14454',
-    name: 'Stackable Bin 18×8×9"',
-    sku: 'S-14454',
-    w: 8,
-    d: 18,
-    h: 9,
-    insideL: 17.125,
-    insideW: 6.75,
-    insideH: 8.25,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12421',
-    name: 'Stackable Bin 18×11×10"',
-    sku: 'S-12421',
-    w: 11,
-    d: 18,
-    h: 10,
-    insideL: 16.875,
-    insideW: 9.25,
-    insideH: 9.375,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  },
-  {
-    id: 'stk-s12422',
-    name: 'Stackable Bin 18×16½×11"',
-    sku: 'S-12422',
-    w: 16.5,
-    d: 18,
-    h: 11,
-    insideL: 16.875,
-    insideW: 15,
-    insideH: 10.375,
-    color: '#1a6dcc',
-    cat: 'Uline Stackable Bins',
-    price: 0
-  }
+  // ── Stackable Bins (BL_305) — BLUE ─────────────────────────────────────────
+  { id:'stk-1', name:'Stackable 7.5×4×3"',    sku:'S-12414', w:7.5,  d:4,     h:3,    color:'#1a6dcc', cat:'Stackable Bins', price:1.35 },
+  { id:'stk-2', name:'Stackable 11×5.5×5"',   sku:'S-12415', w:11,   d:5.5,   h:5,    color:'#1a6dcc', cat:'Stackable Bins', price:2.15 },
+  { id:'stk-3', name:'Stackable 11×8×7"',     sku:'S-12416', w:11,   d:8,     h:7,    color:'#1a6dcc', cat:'Stackable Bins', price:3.45 },
+  { id:'stk-4', name:'Stackable 15×8×7"',     sku:'S-12419', w:15,   d:8,     h:7,    color:'#1a6dcc', cat:'Stackable Bins', price:4.75 },
+  { id:'stk-5', name:'Stackable 15×16.5×7"',  sku:'S-12420', w:15,   d:16.5,  h:7,    color:'#1a6dcc', cat:'Stackable Bins', price:6.95 },
+  { id:'stk-6', name:'Stackable 18×11×10"',   sku:'S-12421', w:18,   d:11,    h:10,   color:'#1a6dcc', cat:'Stackable Bins', price:7.50 },
+  // ── Shelf Bins 12" Deep (BL_8768) — GREEN ──────────────────────────────────
+  { id:'shb-1',  name:'Shelf Bin 2¾×12×4"',   sku:'S-15641', w:2.75, d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:0.95 },
+  { id:'shb-2',  name:'Shelf Bin 4×12×4"',     sku:'S-13396', w:4,    d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.15 },
+  { id:'shb-3',  name:'Shelf Bin 7×12×4"',     sku:'S-13397', w:7,    d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.55 },
+  { id:'shb-4',  name:'Shelf Bin 8½×12×4"',    sku:'S-13398', w:8.5,  d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.85 },
+  { id:'shb-5',  name:'Shelf Bin 11×12×4"',    sku:'S-19944', w:11,   d:12, h:4, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.35 },
+  { id:'shb-6',  name:'Shelf Bin 4×12×6"',     sku:'S-16275', w:4,    d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.55 },
+  { id:'shb-7',  name:'Shelf Bin 7×12×6"',     sku:'S-16276', w:7,    d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.15 },
+  { id:'shb-8',  name:'Shelf Bin 8½×12×6"',    sku:'S-16277', w:8.5,  d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.55 },
+  { id:'shb-9',  name:'Shelf Bin 11×12×6"',    sku:'S-16278', w:11,   d:12, h:6, color:'#2e7d32', cat:'Shelf Bins 12"', price:3.15 },
+  { id:'shb-10', name:'Shelf Bin 4×12×8"',     sku:'S-23363', w:4,    d:12, h:8, color:'#2e7d32', cat:'Shelf Bins 12"', price:1.95 },
+  { id:'shb-11', name:'Shelf Bin 7×12×8"',     sku:'S-23364', w:7,    d:12, h:8, color:'#2e7d32', cat:'Shelf Bins 12"', price:2.75 },
+  // ── Shelf Bins 18" Deep (BL_8768) — RED ────────────────────────────────────
+  { id:'shb-12', name:'Shelf Bin 4×18×4"',     sku:'S-13399', w:4,    d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:1.65 },
+  { id:'shb-13', name:'Shelf Bin 7×18×4"',     sku:'S-13400', w:7,    d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:2.25 },
+  { id:'shb-14', name:'Shelf Bin 8½×18×4"',    sku:'S-13401', w:8.5,  d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:2.75 },
+  { id:'shb-15', name:'Shelf Bin 11×18×4"',    sku:'S-19945', w:11,   d:18, h:4, color:'#c0392b', cat:'Shelf Bins 18"', price:3.45 },
+  { id:'shb-16', name:'Shelf Bin 4×18×6"',     sku:'S-15644', w:4,    d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:2.25 },
+  { id:'shb-17', name:'Shelf Bin 7×18×6"',     sku:'S-15645', w:7,    d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:3.15 },
+  { id:'shb-18', name:'Shelf Bin 8½×18×6"',    sku:'S-15646', w:8.5,  d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:3.75 },
+  { id:'shb-19', name:'Shelf Bin 11×18×6"',    sku:'S-15647', w:11,   d:18, h:6, color:'#c0392b', cat:'Shelf Bins 18"', price:4.55 },
+  // ── Shelf Bins 24" Deep (BL_8768) — YELLOW ─────────────────────────────────
+  { id:'shb-20', name:'Shelf Bin 4×24×4"',     sku:'S-14625', w:4,    d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:2.35 },
+  { id:'shb-21', name:'Shelf Bin 7×24×4"',     sku:'S-14626', w:7,    d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:3.15 },
+  { id:'shb-22', name:'Shelf Bin 8½×24×4"',    sku:'S-14627', w:8.5,  d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:3.75 },
+  { id:'shb-23', name:'Shelf Bin 11×24×4"',    sku:'S-19946', w:11,   d:24, h:4, color:'#e6a800', cat:'Shelf Bins 24"', price:4.75 },
+  { id:'shb-24', name:'Shelf Bin 4×24×6"',     sku:'S-23365', w:4,    d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:3.15 },
+  { id:'shb-25', name:'Shelf Bin 7×24×6"',     sku:'S-23366', w:7,    d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:4.25 },
+  { id:'shb-26', name:'Shelf Bin 8½×24×6"',    sku:'S-23085', w:8.5,  d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:4.95 },
+  { id:'shb-27', name:'Shelf Bin 11×24×6"',    sku:'S-23086', w:11,   d:24, h:6, color:'#e6a800', cat:'Shelf Bins 24"', price:6.15 },
+  // ── Giant Stackable Bins (BL_315) — YELLOW ─────────────────────────────────
+  { id:'gnt-1', name:'Giant 15×20×12.5"',     sku:'S-17886', w:15,   d:20,    h:12.5, color:'#e6a800', cat:'Giant Stackable', price:9.95 },
+  { id:'gnt-2', name:'Giant 17.5×10.9×12.5"', sku:'S-17887', w:17.5, d:10.875,h:12.5, color:'#e6a800', cat:'Giant Stackable', price:10.95 },
+  { id:'gnt-3', name:'Giant 17.5×16.5×12.5"', sku:'S-17888', w:17.5, d:16.5,  h:12.5, color:'#e6a800', cat:'Giant Stackable', price:12.50 },
+  // ── Divider Boxes (BL_8821) — BLUE ─────────────────────────────────────────
+  { id:'div-1', name:'Divider Box 6.9×4×3"',   sku:'S-12414', w:6.875, d:4.125, h:3, color:'#1a6dcc', cat:'Divider Boxes', price:1.35 },
+  { id:'div-2', name:'Divider Box 10.9×6.9×5"',sku:'S-12415', w:10.875,d:6.875, h:5, color:'#1a6dcc', cat:'Divider Boxes', price:2.15 },
+  { id:'div-3', name:'Divider Box 13.9×8.6×6"',sku:'S-12416', w:13.875,d:8.625, h:6, color:'#1a6dcc', cat:'Divider Boxes', price:3.45 },
+  // ── Straight Wall Containers (BL_190) — RED ────────────────────────────────
+  { id:'swc-1', name:'SWC 15×12×7.5"',        sku:'S-19507', w:15,   d:12,    h:7.5,  color:'#c0392b', cat:'Straight Wall', price:5.75 },
+  { id:'swc-2', name:'SWC 15×12×9.5"',        sku:'S-19508', w:15,   d:12,    h:9.5,  color:'#c0392b', cat:'Straight Wall', price:6.95 },
+  { id:'swc-3', name:'SWC 24×15×5"',          sku:'S-22723', w:24,   d:15,    h:5,    color:'#c0392b', cat:'Straight Wall', price:7.50 },
+  { id:'swc-4', name:'SWC 24×15×7.5"',        sku:'S-19509', w:24,   d:15,    h:7.5,  color:'#c0392b', cat:'Straight Wall', price:8.95 },
+  { id:'swc-5', name:'SWC 24×15×9.5"',        sku:'S-19510', w:24,   d:15,    h:9.5,  color:'#c0392b', cat:'Straight Wall', price:10.50 },
+  { id:'swc-6', name:'SWC 24×15×14.5"',       sku:'S-20580', w:24,   d:15,    h:14.5, color:'#c0392b', cat:'Straight Wall', price:13.95 },
+  // ── Collapsible Straight Wall Container (BL_1470) — BLACK ──────────────────
+  { id:'cswc-1', name:'Collapsible SWC 24×16×12"', sku:'S-21123', w:24, d:16, h:12, color:'#2c2c2c', cat:'Collapsible SWC', price:18.50 },
+  // ── ESD Conductive Bins (BL_308) — BLACK ───────────────────────────────────
+  { id:'esd-1', name:'ESD Bin 5.5×4×3"',      sku:'S-18537', w:5.5,  d:4.125, h:3,    color:'#2c2c2c', cat:'ESD Conductive', price:3.95 },
+  { id:'esd-2', name:'ESD Bin 7.5×4×3"',      sku:'S-18538', w:7.5,  d:4.125, h:3,    color:'#2c2c2c', cat:'ESD Conductive', price:4.75 },
+  { id:'esd-3', name:'ESD Bin 11×5.5×5"',     sku:'S-18539', w:11,   d:5.5,   h:5,    color:'#2c2c2c', cat:'ESD Conductive', price:6.50 },
 ];
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
